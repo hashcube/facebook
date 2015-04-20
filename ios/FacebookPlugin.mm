@@ -14,8 +14,8 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     NSLOG(@"{facebook} opts %@", opts);
 
     // lowercase appId param matches the JS init interface
-    NSString *appID = [opts objectForKey:@"appId"];
-    NSString *displayName = [opts objectForKey:@"displayName"];
+    NSString *appID = [opts objectForKey:@"facebookAppID"];
+    NSString *displayName = [opts objectForKey:@"facebookDisplayName"];
 
     [FBSettings setDefaultAppID:appID];
     [FBSettings setDefaultDisplayName:displayName];
@@ -472,10 +472,17 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
   return self;
 }
 
+- (void) sendAppEventPurchased:(NSDictionary *)jsonObject {
+    [FBAppEvents logEvent:FBAppEventNamePurchased
+    valueToSum: [[jsonObject objectForKey:@"price"] doubleValue]
+    parameters:@{ FBAppEventParameterNameContentType : [jsonObject objectForKey:@"currency"],
+      FBAppEventParameterNameContentID: [jsonObject objectForKey:@"content"],
+      FBAppEventParameterNameCurrency: @"USD" } ];
+}
 
+- (void) sendAppEventAchievement:(NSDictionary *)jsonObject {
+    [FBAppEvents logEvent:FBAppEventNameUnlockedAchievement
+    parameters:@{ FBAppEventParameterNameDescription: [jsonObject objectForKey:@"name"],
+      FBAppEventParameterNameNumItems    : [jsonObject objectForKey:@"max_ms"]} ];
+}
 @end
-
-
-
-
-

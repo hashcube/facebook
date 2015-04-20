@@ -71,8 +71,8 @@ public class FacebookPlugin implements IPlugin {
 
   Integer activeRequest = null;
 
-  String _facebookAppID = "";
-  String _facebookDisplayName = "";
+  String _facebookAppID = null;
+  String _facebookDisplayName = null;
 
   private String appID = null;
   private String userID = null;
@@ -91,6 +91,8 @@ public class FacebookPlugin implements IPlugin {
     JSONObject res;
     try {
       res = new JSONObject(s_json);
+      res.put("appId",_facebookAppID);
+      res.put("displayName",_facebookDisplayName);
     } catch (JSONException e) {
       onJSONException(e);
       return;
@@ -456,6 +458,36 @@ public class FacebookPlugin implements IPlugin {
       add("rsvp_event");
     }
   };
+
+  public void sendAppEventPurchased(String param){
+    try {
+      JSONObject ogData = new JSONObject(param);
+      AppEventsLogger loggerF = AppEventsLogger.newLogger(_activity);
+      Bundle parameters = new Bundle();
+      parameters.putString(AppEventsConstants.EVENT_PARAM_CURRENCY, "USD");
+      parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_TYPE, (String) ogData.get("currency"));
+      parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_ID, (String) ogData.get("content"));
+      loggerF.logEvent(AppEventsConstants.EVENT_NAME_PURCHASED,
+                       (Double) ogData.get("price"),
+                       parameters);
+    } catch (Exception e) {
+      logger.log("{facebook-native} Exception while processing purchased_send_fb event:", e.getMessage());
+    }
+  }
+
+  public void sendAppEventAchievement(String param){
+    try {
+      JSONObject ogData = new JSONObject(param);
+      AppEventsLogger loggerF = AppEventsLogger.newLogger(_activity);
+      Bundle parameters = new Bundle();
+      parameters.putString(AppEventsConstants.EVENT_PARAM_DESCRIPTION, (String) ogData.get("name"));
+      parameters.putString(AppEventsConstants.EVENT_PARAM_NUM_ITEMS, Integer.toString((Integer) ogData.get("max_ms")));
+      loggerF.logEvent(AppEventsConstants.EVENT_NAME_UNLOCKED_ACHIEVEMENT,
+                       parameters);
+    } catch (Exception e) {
+      logger.log("{facebook-native} Exception while processing achievement_send_fb event:", e.getMessage());
+    }
+  }
 
   private boolean isPublishPermission(String permission) {
     return permission != null &&
