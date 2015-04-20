@@ -91,8 +91,8 @@ public class FacebookPlugin implements IPlugin {
     JSONObject res;
     try {
       res = new JSONObject(s_json);
-      res.put("appId",_facebookAppID);
-      res.put("displayName",_facebookDisplayName);
+      res.put("appId", _facebookAppID);
+      res.put("displayName", _facebookDisplayName);
     } catch (JSONException e) {
       onJSONException(e);
       return;
@@ -459,7 +459,7 @@ public class FacebookPlugin implements IPlugin {
     }
   };
 
-  public void sendAppEventPurchased(String param){
+  public void sendAppEventPurchased(String param) {
     try {
       JSONObject ogData = new JSONObject(param);
       AppEventsLogger loggerF = AppEventsLogger.newLogger(_activity);
@@ -475,7 +475,7 @@ public class FacebookPlugin implements IPlugin {
     }
   }
 
-  public void sendAppEventAchievement(String param){
+  public void sendAppEventAchievement(String param) {
     try {
       JSONObject ogData = new JSONObject(param);
       AppEventsLogger loggerF = AppEventsLogger.newLogger(_activity);

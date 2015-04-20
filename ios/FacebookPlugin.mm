@@ -444,6 +444,10 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
   }
 }
 
+- (void) didBecomeActive:(NSDictionary *)jsonObject {
+  [FBSession.activeSession handleDidBecomeActive];
+}
+
 - (void) handleOpenURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication {
   NSLOG(@"{facebook} handleOpenURL: %@", url);
   @try {
