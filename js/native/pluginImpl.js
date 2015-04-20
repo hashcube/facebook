@@ -253,6 +253,18 @@ function createNativeFacebookWrapper () {
       nativeFB.request('getAuthStatus', cb);
     },
 
+    sendAppEventPurchased: function FBNativeGetAuthResponse (cb) {
+      nativeFB.request('sendAppEventPurchased', cb);
+    },
+
+    sendAppEventAchievement: function FBNativeGetAuthResponse (cb) {
+      nativeFB.request('sendAppEventAchievement', cb);
+    },
+
+    didBecomeActive: function FBNativeGetAuthResponse (cb) {
+      nativeFB.request('didBecomeActive', cb);
+    },
+
     /**
      * @property Event
      */
