@@ -253,16 +253,16 @@ function createNativeFacebookWrapper () {
       nativeFB.request('getAuthStatus', cb);
     },
 
-    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cb) {
-      nativeFB.request('sendAppEventPurchased', cb);
+    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cb, data) {
+      nativeFB.notify('sendAppEventPurchased', data, cb);
     },
 
-    sendAppEventAchievement: function FBNativeSendAppEventAchievement (cb) {
-      nativeFB.request('sendAppEventAchievement', cb);
+    sendAppEventAchievement: function FBNativeSendAppEventAchievement (cb, data) {
+      nativeFB.notify('sendAppEventAchievement', data, cb);
     },
 
     didBecomeActive: function FBNativeDidBecomeActive (cb) {
-      nativeFB.request('didBecomeActive', cb);
+      nativeFB.notify('didBecomeActive', cb);
     },
 
     /**
