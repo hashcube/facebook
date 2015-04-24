@@ -12,6 +12,12 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 
 - (NSString *) facebookInit:(NSDictionary *)opts {
 
+    NSString *appID = [opts objectForKey:@"facebookAppID"];
+    NSString *displayName = [opts objectForKey:@"facebookDisplayName"];
+
+    [FBSettings setDefaultAppID:appID];
+    [FBSettings setDefaultDisplayName:displayName];
+
     // lowercase appId param matches the JS init interface
     NSNumber * frictionlessRequests = [opts objectForKey:@"frictionlessRequests"];
 
@@ -64,7 +70,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
       permissionsErrorMessage = @"Your app can't ask for both read and write permissions.";
     } else if (publishPermissionFound) {
       // Only publish permissions
-      self.loginRequestId = requestId;
+//      self.loginRequestId = requestId;
       [FBSession.activeSession
         requestNewPublishPermissions:permissions
         defaultAudience:FBSessionDefaultAudienceFriends
@@ -73,7 +79,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
         }];
     } else {
       // Only read permissions
-      self.loginRequestId = requestId;
+//      self.loginRequestId = requestId;
       [FBSession.activeSession
         requestNewReadPermissions:permissions
         completionHandler:^(FBSession *session, NSError *error) {
@@ -86,7 +92,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     // Initial log in, can only ask to read
     // type permissions
     if ([self areAllPermissionsReadPermissions:permissions]) {
-      self.loginRequestId = requestId;
+//      self.loginRequestId = requestId;
       [FBSession
         openActiveSessionWithReadPermissions:permissions
         allowLoginUI:YES
@@ -219,7 +225,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 - (void) logout:(NSDictionary *)opts withRequestId:(NSNumber *)requestId {
   if (!FBSession.activeSession.isOpen) { return; }
 
-  [FBSession.activeSession closeAndClearTokenInformation];
+  [FBSession.activeSession close];
 
   [[PluginManager get]
     dispatchJSResponse: @{@"status": @"not_authorized"}
@@ -293,7 +299,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
           withData:res];
 
         if (self.loginRequestId != nil) {
-          [[PluginManager get]
+            [[PluginManager get]
             dispatchJSResponse:res
             withError:nil
             andRequestId:self.loginRequestId];
@@ -304,11 +310,13 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     case FBSessionStateClosed:
       // TODO this should probably emit an auth.statusChange and/or
       // auth.authResponseChanged event.
-          [FBSession.activeSession closeAndClearTokenInformation];
-          break;
+      [FBSession.activeSession closeAndClearTokenInformation];
+      self.loginRequestId = nil;
+
+      break;
     case FBSessionStateClosedLoginFailed:
       [FBSession.activeSession closeAndClearTokenInformation];
-          [[PluginManager get]
+      [[PluginManager get]
            dispatchJSResponse:nil
            withError:nil
            andRequestId:self.loginRequestId];
@@ -428,9 +436,9 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 }
 
 - (void) applicationDidBecomeActive:(UIApplication *)app {
+  [FBSession.activeSession handleDidBecomeActive];
   @try {
     // Track app active event with Facebook app analytics
-    [FBSession.activeSession handleDidBecomeActive];
     [FBAppEvents activateApp];
     [FBAppCall handleDidBecomeActive];
   }
@@ -454,6 +462,8 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // The plugin must call super dealloc.
 - (void) dealloc {
   [super dealloc];
+    [self.loginRequestId release];
+    self.loginRequestId = nil;
 }
 
 // The plugin must call super init.
