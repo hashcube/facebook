@@ -11,17 +11,15 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // -----------------------------------------------------------------------------
 
 - (NSString *) facebookInit:(NSDictionary *)opts {
-    NSLOG(@"{facebook} opts %@", opts);
 
-    // lowercase appId param matches the JS init interface
-    NSString *appID = [opts objectForKey:@"appId"];
-    NSString *displayName = [opts objectForKey:@"displayName"];
+    NSString *appID = [opts objectForKey:@"facebookAppID"];
+    NSString *displayName = [opts objectForKey:@"facebookDisplayName"];
 
     [FBSettings setDefaultAppID:appID];
     [FBSettings setDefaultDisplayName:displayName];
-    NSNumber * frictionlessRequests = [opts objectForKey:@"frictionlessRequests"];
 
-    NSLOG(@"{facebook} SET DEFAULTS %@ %@", appID, displayName);
+    // lowercase appId param matches the JS init interface
+    NSNumber * frictionlessRequests = [opts objectForKey:@"frictionlessRequests"];
 
     [FBSession openActiveSessionWithReadPermissions:nil
       allowLoginUI:NO
@@ -33,8 +31,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 
         [self onSessionStateChanged:session state:state error:error];
       }];
-
-
 
     return @"{\"status\": \"ok\"}";
 }
@@ -74,7 +70,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
       permissionsErrorMessage = @"Your app can't ask for both read and write permissions.";
     } else if (publishPermissionFound) {
       // Only publish permissions
-      self.loginRequestId = requestId;
+//      self.loginRequestId = requestId;
       [FBSession.activeSession
         requestNewPublishPermissions:permissions
         defaultAudience:FBSessionDefaultAudienceFriends
@@ -83,7 +79,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
         }];
     } else {
       // Only read permissions
-      self.loginRequestId = requestId;
+//      self.loginRequestId = requestId;
       [FBSession.activeSession
         requestNewReadPermissions:permissions
         completionHandler:^(FBSession *session, NSError *error) {
@@ -96,13 +92,11 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     // Initial log in, can only ask to read
     // type permissions
     if ([self areAllPermissionsReadPermissions:permissions]) {
-      self.loginRequestId = requestId;
-      NSLOG(@"{facebook} requesting initial login");
+//      self.loginRequestId = requestId;
       [FBSession
         openActiveSessionWithReadPermissions:permissions
         allowLoginUI:YES
         completionHandler:^(FBSession *session, FBSessionState state, NSError *error) {
-          NSLOG(@"{facebook} got response from initial login");
           [self onSessionStateChanged:session state:state error:error];
         }];
     } else {
@@ -125,7 +119,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // dialogs if facebook is unavailable.
 - (void) ui:(NSDictionary *)opts withRequestId:(NSNumber *)requestId {
   FBSession * session = FBSession.activeSession;
-
   // TODO native share and send dialogs
   // BOOL shouldShowWebDialog = YES;
   __block BOOL paramsOK = YES;
@@ -287,7 +280,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // -----------------------------------------------------------------------------
 
 - (void) onSessionStateChanged:(FBSession *)session state:(FBSessionState) state error:(NSError *)error {
-  NSLOG(@"{facebook} onSessionStateChanged");
+  //NSLOG(@"{facebook} onSessionStateChanged with state: %@", state);
 
   switch (state) {
     case FBSessionStateOpen:
@@ -305,7 +298,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
           withData:res];
 
         if (self.loginRequestId != nil) {
-          [[PluginManager get]
+            [[PluginManager get]
             dispatchJSResponse:res
             withError:nil
             andRequestId:self.loginRequestId];
@@ -316,8 +309,17 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     case FBSessionStateClosed:
       // TODO this should probably emit an auth.statusChange and/or
       // auth.authResponseChanged event.
+      [FBSession.activeSession closeAndClearTokenInformation];
+      self.loginRequestId = nil;
+
+      break;
     case FBSessionStateClosedLoginFailed:
       [FBSession.activeSession closeAndClearTokenInformation];
+      [[PluginManager get]
+           dispatchJSResponse:nil
+           withError:nil
+           andRequestId:self.loginRequestId];
+          self.loginRequestId = nil;
       break;
     default:
       break;
@@ -416,7 +418,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // -----------------------------------------------------------------------------
 
 - (void) initializeWithManifest:(NSDictionary *)manifest appDelegate:(TeaLeafAppDelegate *)appDelegate {
-  NSLOG(@"{facebook} sending plugin ready event");
   [[PluginManager get] dispatchEvent:@"FacebookPluginReady"
                            forPlugin:self
                            withData:@{@"status": @"OK"}];
@@ -434,6 +435,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 }
 
 - (void) applicationDidBecomeActive:(UIApplication *)app {
+  [FBSession.activeSession handleDidBecomeActive];
   @try {
     // Track app active event with Facebook app analytics
     [FBAppEvents activateApp];
@@ -460,6 +462,8 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // The plugin must call super dealloc.
 - (void) dealloc {
   [super dealloc];
+  [self.loginRequestId release];
+  self.loginRequestId = nil;
 }
 
 // The plugin must call super init.
@@ -472,10 +476,17 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
   return self;
 }
 
+- (void) sendAppEventPurchased:(NSDictionary *)jsonObject {
+    [FBAppEvents logEvent:FBAppEventNamePurchased
+    valueToSum: [[jsonObject objectForKey:@"price"] doubleValue]
+    parameters:@{ FBAppEventParameterNameContentType : [jsonObject objectForKey:@"currency"],
+      FBAppEventParameterNameContentID: [jsonObject objectForKey:@"content"],
+      FBAppEventParameterNameCurrency: @"USD" } ];
+}
 
+- (void) sendAppEventAchievement:(NSDictionary *)jsonObject {
+    [FBAppEvents logEvent:FBAppEventNameUnlockedAchievement
+    parameters:@{ FBAppEventParameterNameDescription: [jsonObject objectForKey:@"name"],
+      FBAppEventParameterNameNumItems    : [jsonObject objectForKey:@"max_ms"]} ];
+}
 @end
-
-
-
-
-

@@ -3,7 +3,7 @@
 
 @interface FacebookPlugin : GCPlugin { }
 
-@property (assign) NSNumber * loginRequestId;
+@property (nonatomic, retain) NSNumber * loginRequestId;
 
 @end
 

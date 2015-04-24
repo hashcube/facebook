@@ -36,7 +36,9 @@ function Facebook () {
     'getLoginStatus',
     'login',
     'logout',
-    'getAuthResponse'
+    'getAuthResponse',
+    'sendAppEventPurchased',
+    'sendAppEventAchievement'
   ];
 
   var self = this;
