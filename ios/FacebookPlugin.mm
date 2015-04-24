@@ -225,7 +225,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 - (void) logout:(NSDictionary *)opts withRequestId:(NSNumber *)requestId {
   if (!FBSession.activeSession.isOpen) { return; }
 
-  [FBSession.activeSession close];
+  [FBSession.activeSession closeAndClearTokenInformation];
 
   [[PluginManager get]
     dispatchJSResponse: @{@"status": @"not_authorized"}
@@ -448,6 +448,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 }
 
 - (void) handleOpenURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication {
+    NSLOG(@"{facebook} handleOpenURL: %@", url);
   @try {
     BOOL isFBCallback = [url.scheme hasPrefix:@"fb"];
     if (isFBCallback) {
