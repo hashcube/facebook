@@ -261,10 +261,6 @@ function createNativeFacebookWrapper () {
       nativeFB.notify('sendAppEventAchievement', data, cb);
     },
 
-    didBecomeActive: function FBNativeDidBecomeActive (cb) {
-      nativeFB.notify('didBecomeActive', cb);
-    },
-
     /**
      * @property Event
      */

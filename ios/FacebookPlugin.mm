@@ -11,17 +11,9 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // -----------------------------------------------------------------------------
 
 - (NSString *) facebookInit:(NSDictionary *)opts {
-    NSLOG(@"{facebook} opts %@", opts);
 
     // lowercase appId param matches the JS init interface
-    NSString *appID = [opts objectForKey:@"facebookAppID"];
-    NSString *displayName = [opts objectForKey:@"facebookDisplayName"];
-
-    [FBSettings setDefaultAppID:appID];
-    [FBSettings setDefaultDisplayName:displayName];
     NSNumber * frictionlessRequests = [opts objectForKey:@"frictionlessRequests"];
-
-    NSLOG(@"{facebook} SET DEFAULTS %@ %@", appID, displayName);
 
     [FBSession openActiveSessionWithReadPermissions:nil
       allowLoginUI:NO
@@ -33,8 +25,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 
         [self onSessionStateChanged:session state:state error:error];
       }];
-
-
 
     return @"{\"status\": \"ok\"}";
 }
@@ -97,12 +87,10 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     // type permissions
     if ([self areAllPermissionsReadPermissions:permissions]) {
       self.loginRequestId = requestId;
-      NSLOG(@"{facebook} requesting initial login");
       [FBSession
         openActiveSessionWithReadPermissions:permissions
         allowLoginUI:YES
         completionHandler:^(FBSession *session, FBSessionState state, NSError *error) {
-          NSLOG(@"{facebook} got response from initial login");
           [self onSessionStateChanged:session state:state error:error];
         }];
     } else {
@@ -125,7 +113,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // dialogs if facebook is unavailable.
 - (void) ui:(NSDictionary *)opts withRequestId:(NSNumber *)requestId {
   FBSession * session = FBSession.activeSession;
-
   // TODO native share and send dialogs
   // BOOL shouldShowWebDialog = YES;
   __block BOOL paramsOK = YES;
@@ -246,6 +233,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
   NSString * method = [[opts valueForKey:@"method"] uppercaseString];
   NSMutableDictionary * params = [[opts objectForKey:@"params"] mutableCopy];
 
+    NSLog(@"Inside api with request id: %@", requestId);
   [FBRequestConnection
     startWithGraphPath:path
     parameters:params
@@ -287,7 +275,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // -----------------------------------------------------------------------------
 
 - (void) onSessionStateChanged:(FBSession *)session state:(FBSessionState) state error:(NSError *)error {
-  NSLOG(@"{facebook} onSessionStateChanged");
+  //NSLOG(@"{facebook} onSessionStateChanged with state: %@", state);
 
   switch (state) {
     case FBSessionStateOpen:
@@ -316,8 +304,15 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     case FBSessionStateClosed:
       // TODO this should probably emit an auth.statusChange and/or
       // auth.authResponseChanged event.
+          [FBSession.activeSession closeAndClearTokenInformation];
+          break;
     case FBSessionStateClosedLoginFailed:
       [FBSession.activeSession closeAndClearTokenInformation];
+          [[PluginManager get]
+           dispatchJSResponse:nil
+           withError:nil
+           andRequestId:self.loginRequestId];
+          self.loginRequestId = nil;
       break;
     default:
       break;
@@ -416,7 +411,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // -----------------------------------------------------------------------------
 
 - (void) initializeWithManifest:(NSDictionary *)manifest appDelegate:(TeaLeafAppDelegate *)appDelegate {
-  NSLOG(@"{facebook} sending plugin ready event");
   [[PluginManager get] dispatchEvent:@"FacebookPluginReady"
                            forPlugin:self
                            withData:@{@"status": @"OK"}];
@@ -436,6 +430,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 - (void) applicationDidBecomeActive:(UIApplication *)app {
   @try {
     // Track app active event with Facebook app analytics
+    [FBSession.activeSession handleDidBecomeActive];
     [FBAppEvents activateApp];
     [FBAppCall handleDidBecomeActive];
   }
@@ -444,12 +439,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
   }
 }
 
-- (void) didBecomeActive:(NSDictionary *)jsonObject {
-  [FBSession.activeSession handleDidBecomeActive];
-}
-
 - (void) handleOpenURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication {
-  NSLOG(@"{facebook} handleOpenURL: %@", url);
   @try {
     BOOL isFBCallback = [url.scheme hasPrefix:@"fb"];
     if (isFBCallback) {

@@ -38,8 +38,7 @@ function Facebook () {
     'logout',
     'getAuthResponse',
     'sendAppEventPurchased',
-    'sendAppEventAchievement',
-    'didBecomeActive'
+    'sendAppEventAchievement'
   ];
 
   var self = this;
