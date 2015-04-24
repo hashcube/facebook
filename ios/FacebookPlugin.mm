@@ -239,7 +239,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
   NSString * method = [[opts valueForKey:@"method"] uppercaseString];
   NSMutableDictionary * params = [[opts objectForKey:@"params"] mutableCopy];
 
-    NSLog(@"Inside api with request id: %@", requestId);
   [FBRequestConnection
     startWithGraphPath:path
     parameters:params
@@ -448,7 +447,7 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 }
 
 - (void) handleOpenURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication {
-    NSLOG(@"{facebook} handleOpenURL: %@", url);
+  NSLOG(@"{facebook} handleOpenURL: %@", url);
   @try {
     BOOL isFBCallback = [url.scheme hasPrefix:@"fb"];
     if (isFBCallback) {
@@ -463,8 +462,8 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 // The plugin must call super dealloc.
 - (void) dealloc {
   [super dealloc];
-    [self.loginRequestId release];
-    self.loginRequestId = nil;
+  [self.loginRequestId release];
+  self.loginRequestId = nil;
 }
 
 // The plugin must call super init.
