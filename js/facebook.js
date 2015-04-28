@@ -1,6 +1,6 @@
 import device;
 import lib.PubSub;
-import lib.Callback;
+import lib.Callback as Callback;
 
 // Native is just imported for side effects. It will setup the window.FB object
 // just as in the browser.
@@ -12,7 +12,7 @@ import .native.pluginImpl as nativeImpl;
  */
 function Facebook () {
   // `onReady` is the only non-standard property on the facebook object.
-  this.onReady = new lib.Callback();
+  this.onReady = new Callback();
   if (window.FB) {
     // Facebook is ready for API calls
     this.onReady.fire();
