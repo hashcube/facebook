@@ -37,12 +37,11 @@ function Facebook () {
     'sendAppEventAchievement'
   ];
 
-  var self = this;
-  methods.forEach(function (method) {
-    self[method] = function () {
-      self.pluginImpl[method].apply(self.pluginImpl, arguments);
-    };
-  });
+  methods.forEach(bind(this, function (method) {
+    this[method] = bind(this, function () {
+      this.pluginImpl[method].apply(this.pluginImpl, arguments);
+    });
+  }));
 
   // Same with object properties.
   var properties = [
@@ -51,14 +50,14 @@ function Facebook () {
     'Event'
   ];
 
-  properties.forEach(function (prop) {
-    Object.defineProperty(self, prop, {
+  properties.forEach(bind(this, function (prop) {
+    Object.defineProperty(this, prop, {
       enumerable: true,
-      get: function () {
-        return self.pluginImpl[prop];
-      }
+      get: bind(this, function () {
+        return this.pluginImpl[prop];
+      })
     });
-  });
+  }));
 
   // pluginImpl is a non-enumerable property of the GC FB plugin
   Object.defineProperty(this, 'pluginImpl', {
