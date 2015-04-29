@@ -1,5 +1,3 @@
-import device;
-import lib.PubSub;
 import lib.Callback as Callback;
 
 // Native is just imported for side effects. It will setup the window.FB object
@@ -18,9 +16,7 @@ function Facebook () {
     this.onReady.fire();
   } else {
     // Use facebook fbAsyncInit callback
-    window.fbAsyncInit = function () {
-      this.onReady.fire();
-    }.bind(this);
+    window.fbAsyncInit = bind(this.onReady, this.onReady.fire);
   }
 
   /**
