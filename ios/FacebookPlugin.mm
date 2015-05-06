@@ -477,11 +477,11 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
 }
 
 - (void) sendAppEventPurchased:(NSDictionary *)jsonObject {
-    [FBAppEvents logEvent:FBAppEventNamePurchased
-    valueToSum: [[jsonObject objectForKey:@"price"] doubleValue]
-    parameters:@{ FBAppEventParameterNameContentType : [jsonObject objectForKey:@"currency"],
-      FBAppEventParameterNameContentID: [jsonObject objectForKey:@"content"],
-      FBAppEventParameterNameCurrency: @"USD" } ];
+    [FBAppEvents logPurchase:[[jsonObject objectForKey:@"price"] doubleValue]
+                    currency: @"USD"
+                  parameters:@{ FBAppEventParameterNameContentType : [jsonObject objectForKey:@"currency"],
+                                FBAppEventParameterNameContentID: [jsonObject objectForKey:@"content"],
+                                FBAppEventParameterNameCurrency: @"USD" }];
 }
 
 - (void) sendAppEventAchievement:(NSDictionary *)jsonObject {
