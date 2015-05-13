@@ -253,12 +253,18 @@ function createNativeFacebookWrapper () {
       nativeFB.request('getAuthStatus', cb);
     },
 
-    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cb, data) {
-      nativeFB.notify('sendAppEventPurchased', data, cb);
+    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cost, currency, productId) {
+      var opts = {
+        price: cost, currency: currency, content: productId
+      };
+      nativeFB.notify('sendAppEventPurchased', opts);
     },
 
-    sendAppEventAchievement: function FBNativeSendAppEventAchievement (cb, data) {
-      nativeFB.notify('sendAppEventAchievement', data, cb);
+    sendAppEventAchievement: function FBNativeSendAppEventAchievement (ach_name, max_ms) {
+      var opts = {
+        name: ach_name, max_ms: max_ms
+      }
+      nativeFB.notify('sendAppEventAchievement', opts);
     },
 
     /**
