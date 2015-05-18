@@ -7,8 +7,7 @@
     },
     "extensions": {
       "android": "android",
-      "ios": "ios",
-      "build": "build"
+      "ios": "ios"
     }
   },
   "devDependencies": {
