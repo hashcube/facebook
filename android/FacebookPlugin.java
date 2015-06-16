@@ -262,6 +262,7 @@ public class FacebookPlugin implements IPlugin {
     if (_params.length() > 0) {
       try {
         params = BundleJSONConverter.convertToBundle(_params);
+        params.putBoolean("redirect", false);
       } catch (JSONException e) {
         log("api - error converting JSONObject to Bundle");
       }
