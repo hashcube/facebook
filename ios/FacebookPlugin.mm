@@ -5,6 +5,7 @@
 @implementation FacebookPlugin
 
 static FBFrictionlessRecipientCache * friendCache = NULL;
+static BOOL publishRequested = NO;
 
 // -----------------------------------------------------------------------------
 // EXPOSED PLUGIN METHODS
@@ -64,22 +65,24 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
       }
     }
 
+    //TODO: This if condition would never be true, revisit this function
     if (publishPermissionFound && readPermissionFound) {
       // Mix of permissions, not allowed
       permissionsAllowed = NO;
       permissionsErrorMessage = @"Your app can't ask for both read and write permissions.";
     } else if (publishPermissionFound) {
-      // Only publish permissions
-//      self.loginRequestId = requestId;
-      [FBSession.activeSession
-        requestNewPublishPermissions:permissions
-        defaultAudience:FBSessionDefaultAudienceFriends
-        completionHandler:^(FBSession *session, NSError *error) {
-          [self onSessionStateChanged:session state:session.state error:error];
-        }];
+      if(!publishRequested) {
+        // Only publish permissions
+        [FBSession.activeSession
+          requestNewPublishPermissions:permissions
+          defaultAudience:FBSessionDefaultAudienceFriends
+          completionHandler:^(FBSession *session, NSError *error) {
+            publishRequested = YES;
+            [self onSessionStateChanged:session state:session.state error:error];
+          }];
+      }
     } else {
       // Only read permissions
-//      self.loginRequestId = requestId;
       [FBSession.activeSession
         requestNewReadPermissions:permissions
         completionHandler:^(FBSession *session, NSError *error) {
@@ -92,7 +95,6 @@ static FBFrictionlessRecipientCache * friendCache = NULL;
     // Initial log in, can only ask to read
     // type permissions
     if ([self areAllPermissionsReadPermissions:permissions]) {
-//      self.loginRequestId = requestId;
       [FBSession
         openActiveSessionWithReadPermissions:permissions
         allowLoginUI:YES
