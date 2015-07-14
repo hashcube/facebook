@@ -308,20 +308,21 @@ static BOOL publishRequested = NO;
         }
       }
       break;
-    case FBSessionStateClosed:
-      // TODO this should probably emit an auth.statusChange and/or
-      // auth.authResponseChanged event.
-      [FBSession.activeSession closeAndClearTokenInformation];
-      self.loginRequestId = nil;
-
+    case FBSessionStateClosed: {
+       NSDictionary * res = [self authResponse];
+       [[PluginManager get] dispatchEvent:@"auth.authResponseChanged"
+                                forPlugin:self
+                                 withData:res];
+      }
       break;
-    case FBSessionStateClosedLoginFailed:
+    case FBSessionStateClosedLoginFailed: {
       [FBSession.activeSession closeAndClearTokenInformation];
       [[PluginManager get]
            dispatchJSResponse:nil
            withError:nil
            andRequestId:self.loginRequestId];
           self.loginRequestId = nil;
+      }
       break;
     default:
       break;
