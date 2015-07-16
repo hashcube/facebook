@@ -113,7 +113,7 @@ public class FacebookPlugin implements IPlugin {
       openRequest.setCallback(new Session.StatusCallback() {
         @Override
         public void call(Session session, SessionState state, Exception exception) {
-          sendEvent("fb.initialized", authResponse());
+          sendEvent("fb.initialized", getResponse());
           onSessionStateChange(state, exception);
         }
       });
