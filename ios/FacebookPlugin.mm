@@ -30,6 +30,11 @@ static BOOL publishRequested = NO;
           [friendCache prefetchAndCacheForSession:session];
         }
 
+        [[PluginManager get]
+           dispatchEvent:@"fb:initialized"
+           forPlugin:self
+           withData:[self authResponse]];
+
         [self onSessionStateChanged:session state:state error:error];
       }];
 
