@@ -311,6 +311,8 @@ static BOOL publishRequested = NO;
             andRequestId:self.loginRequestId];
           self.loginRequestId = nil;
         }
+      } else {
+        [FBSession.activeSession closeAndClearTokenInformation];
       }
       break;
     case FBSessionStateClosed: {
