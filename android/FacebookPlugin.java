@@ -762,7 +762,14 @@ public class FacebookPlugin implements IPlugin {
 
     if (e instanceof FacebookOperationCanceledException) {
       // Send undefined
-      sendResponse(null, null, requestId);
+      JSONObject response = new JSONObject();
+      try {
+        response.put("isCancelled", true);
+      } catch (JSONException exp) {
+        log("JSON exception while constructing error response");
+      }
+
+      sendResponse(response, null, requestId);
     } else {
       if (e instanceof FacebookDialogException) {
         msg = "Dialog exception: " + e.getMessage();

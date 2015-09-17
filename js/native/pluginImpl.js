@@ -55,6 +55,10 @@ function getNativeInterface (pluginName, opts) {
           }
         }
 
+        if (res.error && res.error.code === 190) {
+          events.emit('fb:apprevoked');
+        }
+
         fn(err, res);
       };
 
