@@ -285,8 +285,11 @@ public class FacebookPlugin implements IPlugin {
     if (path.charAt(0) == '/') {
       path = (new StringBuilder(path)).deleteCharAt(0).toString();
     }
-
-    Request req = new Request(session, path, params, method, new Request.Callback() {
+    final Session _session = session;
+    final Bundle parameters = params;
+    final HttpMethod req_method = method;
+    final String _path = path;
+    final Request req = new Request(_session, _path, parameters, req_method, new Request.Callback() {
       @Override
       public void onCompleted(Response res) {
         if (res.getError() != null) {
@@ -297,7 +300,17 @@ public class FacebookPlugin implements IPlugin {
       }
     });
 
-    req.executeAndWait();
+    if(session != null && session.isOpened() && _params.has("async")) {
+      log("Making Async Requests");
+      final Activity devkitActivity = _activity;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          req.executeAsync();
+        }
+      });
+    } else {
+      req.executeAndWait();
+    }
   }
 
   public void ui(String s_json, Integer requestId) {
