@@ -301,7 +301,6 @@ public class FacebookPlugin implements IPlugin {
     });
 
     if(session != null && session.isOpened() && _params.has("async")) {
-      log("Making Async Requests");
       final Activity devkitActivity = _activity;
       _activity.runOnUiThread(new Runnable() {
         public void run() {
