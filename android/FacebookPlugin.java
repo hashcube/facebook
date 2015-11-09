@@ -388,17 +388,23 @@ public class FacebookPlugin implements IPlugin {
       };
       devkitActivity.runOnUiThread(runnable);
     } else if (method.equalsIgnoreCase("apprequests")) {
-      Runnable runnable = new Runnable() {
-        public void run() {
-          WebDialog requestsDialog = (new WebDialog.RequestsDialogBuilder(
-            devkitActivity,
-            Session.getActiveSession(),
-            dialogParams)
-          ).setOnCompleteListener(dialogCallback).build();
-          requestsDialog.show();
-        }
-      };
-      devkitActivity.runOnUiThread(runnable);
+      final Session active_session = getLocalSession(session);
+
+      if(active_session != null) {
+        Runnable runnable = new Runnable() {
+          public void run() {
+            WebDialog requestsDialog = (new WebDialog.RequestsDialogBuilder(
+              devkitActivity,
+              active_session,
+              dialogParams)
+            ).setOnCompleteListener(dialogCallback).build();
+            requestsDialog.show();
+          }
+        };
+        devkitActivity.runOnUiThread(runnable);
+      } else {
+        login(s_json, _requestId);
+      }
     } else if (method.equalsIgnoreCase("share") || method.equalsIgnoreCase("share_open_graph")) {
       Boolean canPresentShareDialog = FacebookDialog.canPresentShareDialog(
         devkitActivity,
@@ -513,7 +519,7 @@ public class FacebookPlugin implements IPlugin {
   }
 
   /**
-   * Check if active session is open
+   * Check if active session is open or not
    *
    * @return boolean
    */
@@ -523,6 +529,26 @@ public class FacebookPlugin implements IPlugin {
       return true;
     } else {
       return false;
+    }
+  }
+
+  /**
+   * Check active session is present or not
+   * Temporary function - Upgrade facebook sdk
+   *
+   * @return Session
+   */
+
+  public Session getLocalSession(Session session) {
+    if(session != null && session.isOpened()) {
+      return session;
+    } else {
+      session = Session.openActiveSessionFromCache(_context);
+      if(session.isOpened()) {
+        return session;
+      } else {
+        return null;
+      }
     }
   }
 
