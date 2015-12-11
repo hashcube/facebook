@@ -1,6 +1,6 @@
 {
   "name": "devkit-facebook",
-  "version": "2.2.0-beta.1",
+  "version": "3.0.0",
   "devkit": {
     "clientPaths": {
       "facebook": "js"
