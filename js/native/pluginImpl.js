@@ -298,6 +298,20 @@ function createNativeFacebookWrapper () {
           NATIVE.plugins.sendRequest('FacebookPlugin', 'shareImage', opts, cb);
         }
       }
+    },
+
+    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cost, currency, productId) {
+      var opts = {
+        price: cost, currency: currency, content: productId
+      };
+      nativeFB.notify('sendAppEventPurchased', opts);
+    },
+
+    sendAppEventAchievement: function FBNativeSendAppEventAchievement (ach_name, max_ms) {
+      var opts = {
+        name: ach_name, max_ms: max_ms
+      }
+      nativeFB.notify('sendAppEventAchievement', opts);
     }
 
   };

@@ -38,6 +38,7 @@ import android.view.WindowManager;
 import com.facebook.*;
 import com.facebook.internal.*;
 
+import com.facebook.appevents.*;
 import com.facebook.FacebookDialogException;
 import com.facebook.FacebookException;
 import com.facebook.FacebookOperationCanceledException;
@@ -909,6 +910,36 @@ public class FacebookPlugin implements IPlugin {
 
   public void setInstallReferrer(String referrer) {
 
+  }
+
+  public void sendAppEventAchievement(String param) {
+    try {
+      JSONObject ogData = new JSONObject(param);
+      AppEventsLogger loggerF = AppEventsLogger.newLogger(_activity);
+      Bundle parameters = new Bundle();
+      parameters.putString(AppEventsConstants.EVENT_PARAM_DESCRIPTION, (String) ogData.get("name"));
+      parameters.putString(AppEventsConstants.EVENT_PARAM_NUM_ITEMS, Integer.toString((Integer) ogData.get("max_ms")));
+      loggerF.logEvent(AppEventsConstants.EVENT_NAME_UNLOCKED_ACHIEVEMENT,
+                       parameters);
+    } catch (Exception e) {
+      logger.log("{facebook-native} Exception while processing achievement_send_fb event:", e.getMessage());
+    }
+  }
+
+  public void sendAppEventPurchased(String param) {
+    try {
+      JSONObject ogData = new JSONObject(param);
+      AppEventsLogger loggerF = AppEventsLogger.newLogger(_activity);
+      Bundle parameters = new Bundle();
+      parameters.putString(AppEventsConstants.EVENT_PARAM_CURRENCY, "USD");
+      parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_TYPE, (String) ogData.get("currency"));
+      parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_ID, (String) ogData.get("content"));
+      loggerF.logEvent(AppEventsConstants.EVENT_NAME_PURCHASED,
+                       (Double) ogData.get("price"),
+                       parameters);
+    } catch (Exception e) {
+      logger.log("{facebook-native} Exception while processing purchased_send_fb event:", e.getMessage());
+    }
   }
 
   @Override

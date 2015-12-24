@@ -486,6 +486,19 @@
   return self;
 }
 
+- (void) sendAppEventPurchased:(NSDictionary *)jsonObject {
+    [FBSDKAppEvents logPurchase:[[jsonObject objectForKey:@"price"] doubleValue]
+                    currency: @"USD"
+                  parameters:@{ FBSDKAppEventParameterNameContentType : [jsonObject objectForKey:@"currency"],
+                                FBSDKAppEventParameterNameContentID: [jsonObject objectForKey:@"content"],
+                                FBSDKAppEventParameterNameCurrency: @"USD" }];
+}
+
+- (void) sendAppEventAchievement:(NSDictionary *)jsonObject {
+    [FBSDKAppEvents logEvent:FBSDKAppEventNameUnlockedAchievement
+    parameters:@{ FBSDKAppEventParameterNameDescription: [jsonObject objectForKey:@"name"],
+      FBSDKAppEventParameterNameNumItems    : [jsonObject objectForKey:@"max_ms"]} ];
+}
 
 @end
 
