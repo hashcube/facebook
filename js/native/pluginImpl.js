@@ -300,18 +300,19 @@ function createNativeFacebookWrapper () {
       }
     },
 
-    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cost, currency, productId) {
-      var opts = {
-        price: cost, currency: currency, content: productId
-      };
-      nativeFB.notify('sendAppEventPurchased', opts);
+    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cost, currency, product_id) {
+      nativeFB.notify('sendAppEventPurchased', {
+        price: cost,
+        currency: currency,
+        content: product_id
+      });
     },
 
-    sendAppEventAchievement: function FBNativeSendAppEventAchievement (ach_name, max_ms) {
-      var opts = {
-        name: ach_name, max_ms: max_ms
-      }
-      nativeFB.notify('sendAppEventAchievement', opts);
+    sendAppEventAchievement: function FBNativeSendAppEventAchievement (achievement, max_ms) {
+      nativeFB.notify('sendAppEventAchievement', {
+        name: achievement,
+        max_ms: max_ms
+      });
     }
 
   };
