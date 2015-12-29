@@ -487,17 +487,18 @@
 }
 
 - (void) sendAppEventPurchased:(NSDictionary *)jsonObject {
+    NSString * currency = (NSString*)[jsonObject objectForKey:@"currency"];
     [FBSDKAppEvents logPurchase: [[jsonObject objectForKey: @"price"] doubleValue]
-      currency: @[jsonObject objectForKey:@"currency"]
+      currency: currency
       parameters: @{ FBSDKAppEventParameterNameContentType: [jsonObject objectForKey:@"currency"],
         FBSDKAppEventParameterNameContentID: [jsonObject objectForKey:@"content"],
-        FBSDKAppEventParameterNameCurrency: [jsonObject objectForKey:@"currency"]}];
+        FBSDKAppEventParameterNameCurrency: currency}];
 }
 
 - (void) sendAppEventAchievement:(NSDictionary *)jsonObject {
     [FBSDKAppEvents logEvent:FBSDKAppEventNameUnlockedAchievement
     parameters: @{ FBSDKAppEventParameterNameDescription: [jsonObject objectForKey:@"name"],
-      FBSDKAppEventParameterNameNumItems: [jsonObject objectForKey:@"level"]} ];
+      FBSDKAppEventParameterNameNumItems: [jsonObject objectForKey:@"count"]} ];
 }
 
 @end
