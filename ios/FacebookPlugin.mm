@@ -490,7 +490,7 @@
     NSString * currency = (NSString*)[jsonObject objectForKey:@"currency"];
     [FBSDKAppEvents logPurchase: [[jsonObject objectForKey: @"price"] doubleValue]
       currency: currency
-      parameters: @{ FBSDKAppEventParameterNameContentType: [jsonObject objectForKey:@"currency"],
+      parameters: @{ FBSDKAppEventParameterNameContentType: currency,
         FBSDKAppEventParameterNameContentID: [jsonObject objectForKey:@"content"],
         FBSDKAppEventParameterNameCurrency: currency}];
 }
