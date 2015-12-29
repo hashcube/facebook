@@ -919,7 +919,7 @@ public class FacebookPlugin implements IPlugin {
     try {
       JSONObject ogData = new JSONObject(param);
       parameters.putString(AppEventsConstants.EVENT_PARAM_DESCRIPTION, (String) ogData.get("name"));
-      parameters.putString(AppEventsConstants.EVENT_PARAM_NUM_ITEMS, Integer.toString((Integer) ogData.get("max_ms")));
+      parameters.putString(AppEventsConstants.EVENT_PARAM_NUM_ITEMS, Integer.toString((Integer) ogData.get("level")));
       fbEventLogger.logEvent(AppEventsConstants.EVENT_NAME_UNLOCKED_ACHIEVEMENT,
                        parameters);
     } catch (Exception e) {

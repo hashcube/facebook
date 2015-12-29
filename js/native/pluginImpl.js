@@ -308,10 +308,10 @@ function createNativeFacebookWrapper () {
       });
     },
 
-    sendAppEventAchievement: function FBNativeSendAppEventAchievement (achievement, max_ms) {
+    sendAppEventAchievement: function FBNativeSendAppEventAchievement (achievement, level) {
       nativeFB.notify('sendAppEventAchievement', {
         name: achievement,
-        max_ms: max_ms
+        level: level
       });
     }
 
