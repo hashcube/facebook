@@ -614,7 +614,7 @@ public class FacebookPlugin implements IPlugin {
       response = "{"
         + "\"status\": \"connected\","
         + "\"authResponse\": {"
-        + "\"accessToken\": \"" + currentToken + "\","
+        + "\"accessToken\": \"" + currentToken.getToken() + "\","
         + "\"expiresIn\": \"" + expiresIn + "\","
         + "\"sig\": \"...\","
         + "\"grantedScopes\": \"" + grantedScopes + "\","
@@ -822,10 +822,31 @@ public class FacebookPlugin implements IPlugin {
                 @Override
                 public void onSuccess(LoginResult loginResult) {
                   log("facebook login response - success");
-                  JSONObject response = getResponse();
-                  sendEvent("auth.login", response);
                    // respond to login request
-                  sendResponse(response, null, activeRequest);
+                  GraphRequest request = GraphRequest.newMeRequest(
+                      loginResult.getAccessToken(),
+                      new GraphRequest.GraphJSONObjectCallback() {
+                          @Override
+                          public void onCompleted(
+                              JSONObject object,
+                              GraphResponse response) {
+                              // Application code
+
+                              try {
+                                  userID = object.getString("id");
+                              } catch (JSONException e) {
+                                  log("{facebook} Exception on loginManager:", e.getMessage());
+                              }
+                              JSONObject responseData = getResponse();
+                              sendEvent("auth.login", responseData);
+                              sendResponse(responseData, null, activeRequest);
+                          }
+                  });
+                  Bundle parameters = new Bundle();
+                  parameters.putString("fields", "id,name,link");
+                  request.setParameters(parameters);
+                  request.executeAsync();
+
                 }
 
                 @Override
