@@ -28,6 +28,7 @@ import android.support.v4.app.Fragment;
 import com.facebook.FacebookCallback;
 import com.facebook.internal.FacebookDialogBase;
 import com.facebook.internal.AppCall;
+import com.facebook.internal.BundleJSONConverter;
 import com.facebook.internal.CallbackManagerImpl;
 import com.facebook.internal.DialogPresenter;
 import com.facebook.share.internal.GameRequestValidation;
@@ -36,6 +37,8 @@ import com.facebook.share.internal.ShareConstants;
 import com.facebook.share.internal.ShareInternalUtility;
 import com.facebook.share.internal.WebDialogParameters;
 import com.facebook.share.model.GameRequestContent;
+import org.json.JSONObject;
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,9 +55,15 @@ public class GameRequestDialog
      */
     public static final class Result {
         String requestId;
+        JSONObject data = null;
 
-        private Result(String requestId) {
-            this.requestId = requestId;
+        private Result(JSONObject data) {
+            this.data = data;
+            try {
+              this.requestId = data.getString(ShareConstants.WEB_DIALOG_RESULT_PARAM_REQUEST_ID);
+            } catch  (JSONException e) {
+              this.requestId = "";
+            }
         }
 
         /**
@@ -63,6 +72,14 @@ public class GameRequestDialog
          */
         public String getRequestId() {
             return requestId;
+        }
+
+        /**
+         * Returns the request data.
+         * @return the request data.
+         */
+        public JSONObject getRequestData() {
+            return data;
         }
     }
 
@@ -129,9 +146,13 @@ public class GameRequestDialog
                 : new ResultProcessor(callback) {
             @Override
             public void onSuccess(AppCall appCall, Bundle results) {
+                JSONObject params = null;
+                try {
+                   params = BundleJSONConverter.convertToJSON(results);
+                } catch  (JSONException e) {
+                }
                 if (results != null) {
-                    callback.onSuccess(new Result(results.getString(
-                            ShareConstants.WEB_DIALOG_RESULT_PARAM_REQUEST_ID)));
+                    callback.onSuccess(new Result(params));
                 } else {
                     onCancel(appCall);
                 }

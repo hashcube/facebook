@@ -98,6 +98,7 @@ function AndroidResponseTransform () {
 AndroidResponseTransform.prototype = new ResponseTransform();
 
 AndroidResponseTransform.prototype.ui = function ui (req, res) {
+  logger.log("{suhail} at responsetransform ", JSON.stringify(res), req);
   if (res && res.error) { return res; }
 
   if (req.method === 'apprequests') {
