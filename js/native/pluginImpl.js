@@ -33,8 +33,6 @@ function getNativeInterface (pluginName, opts) {
 
       // To make life easy in android, we handle optional string results.
       var unpackResults = function unpackResults (err, res) {
-    
-      logger.log('{suhail} unpack result ', err, res);
         if (err) {
           if (typeof err === 'string') {
             try {
@@ -128,9 +126,7 @@ function createNativeFacebookWrapper () {
         // Add `transform` to `this`, but don't give visibility outside the FB
         // object.
         transform: {
-          get: function () { 
-          logger.log("{suhail} at transform ", JSON.stringify(opts));
-       return transform; }
+          get: function () { return transform; }
         }
       });
 
@@ -212,7 +208,6 @@ function createNativeFacebookWrapper () {
     ui: function FBNativeUi (params, cb) {
       var transform = this.transform;
       nativeFB.request('ui', params, function (res) {
-      logger.log('{suhail} ui response impltnative ',res);
         return cb(transform.ui(params, res));
       });
     },
