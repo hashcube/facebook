@@ -146,12 +146,13 @@ public class GameRequestDialog
                 : new ResultProcessor(callback) {
             @Override
             public void onSuccess(AppCall appCall, Bundle results) {
-                JSONObject params = null;
+                JSONObject params;
                 try {
-                   params = BundleJSONConverter.convertToJSON(results);
+                    params = BundleJSONConverter.convertToJSON(results);
                 } catch  (JSONException e) {
+                    params = null;
                 }
-                if (results != null) {
+                if (params != null) {
                     callback.onSuccess(new Result(params));
                 } else {
                     onCancel(appCall);
