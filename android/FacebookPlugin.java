@@ -340,9 +340,9 @@ public class FacebookPlugin implements IPlugin {
             }
         }
 
-        String objectId = dialogParams.getString("objectId");
+        String objectId = dialogParams.getString("object_id");
+        String actionTypeString = dialogParams.getString("action_type");
         GameRequestContent.ActionType actionType = null;
-        String actionTypeString = dialogParams.getString("actionType");
 
         if (actionTypeString != null) {
           if (actionTypeString.equalsIgnoreCase("send")) {
@@ -867,7 +867,7 @@ public class FacebookPlugin implements IPlugin {
       requestDialog.registerCallback(callbackManager, new FacebookCallback<GameRequestDialog.Result>() {
           public void onSuccess(GameRequestDialog.Result result) {
               log("game request result - success");
-              sendResponse("", null, activeRequest);
+              sendResponse(result.getRequestData(), null, activeRequest);
           }
           public void onCancel() {
               log("game request result - success");
