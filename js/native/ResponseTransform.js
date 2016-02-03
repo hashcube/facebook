@@ -46,14 +46,16 @@ IOSResponseTransform.prototype = new ResponseTransform();
 
 // todo import another url package. this won't work in browser/on device
 IOSResponseTransform.prototype.ui = function ui (req, res) {
+  var urlResponse = res.urlResponse;
+
   if (!res) {
     return undefined;
   } else if (res.error) {
     return res;
   }
 
-  if (res.urlResponse) {
-    res = parseQueryObject(res.urlResponse);
+  if (urlResponse) {
+    res = parseQueryObject(urlResponse);
 
 
     if (Object.keys(res).length === 0 && req.method === 'apprequests') {
