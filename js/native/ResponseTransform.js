@@ -53,10 +53,8 @@ IOSResponseTransform.prototype.ui = function ui (req, res) {
   }
 
   if (res.urlResponse) {
-    var uri = new std.uri(res.urlResponse);
-    var query = std.uri.parseQuery(uri._query);
+    res = parseQueryObject(res.urlResponse);
 
-    res = parseQueryObject(query);
 
     if (Object.keys(res).length === 0 && req.method === 'apprequests') {
       return [];
