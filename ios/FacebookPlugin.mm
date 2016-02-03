@@ -142,7 +142,7 @@
          andRequestId:[self requestId]];
     }
     @catch (NSException *exception) {
-        NSLog(@"{FB Resp} Failure to get: %@", exception);
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
     }
 }
 
@@ -154,7 +154,7 @@
          andRequestId:[self requestId]];
     }
     @catch (NSException *exception) {
-        NSLog(@"{FB Resp} Failure to get: %@", exception);
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
     }
 }
 
@@ -166,7 +166,7 @@
          andRequestId:[self requestId]];
     }
     @catch (NSException *exception) {
-        NSLog(@"{FB Resp} Failure to get: %@", exception);
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
     }
 }
 

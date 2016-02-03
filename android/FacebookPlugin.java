@@ -845,15 +845,15 @@ public class FacebookPlugin implements IPlugin {
       requestDialog = new GameRequestDialog(_activity);
       requestDialog.registerCallback(callbackManager, new FacebookCallback<GameRequestDialog.Result>() {
           public void onSuccess(GameRequestDialog.Result result) {
-              log("game request result - success");
+              log("{facebook} game request result - success");
               sendResponse(result.getRequestData(), null, activeRequest);
           }
           public void onCancel() {
-              log("game request result - cancel");
+              log("{facebook} game request result - cancel");
               sendResponse("", "cancelled", activeRequest);
           }
           public void onError(FacebookException error) {
-              log("game request result - error");
+              log("{facebook} game request result - error");
               sendResponse(getErrorResponse(error.getMessage()), "error", activeRequest);
           }
       });
