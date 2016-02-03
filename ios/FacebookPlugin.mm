@@ -127,7 +127,46 @@
         FBSDKGameRequestDialog *dialog = [[FBSDKGameRequestDialog alloc] init];
         dialog.content = [self resolveGameContentFromParams: params];
         dialog.frictionlessRequestsEnabled = frictionlessRequestsEnabled;
+        dialog.delegate = self;
+        self.requestId = requestId;
         [dialog show];
+    }
+}
+
+
+- (void)gameRequestDialog:(FBSDKGameRequestDialog *)gameRequestDialog didCompleteWithResults:(NSDictionary *)results {
+    @try {
+        [[PluginManager get]
+         dispatchJSResponse:@{@"urlResponse":results}
+         withError:nil
+         andRequestId:[self requestId]];
+    }
+    @catch (NSException *exception) {
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
+    }
+}
+
+- (void)gameRequestDialog:(FBSDKGameRequestDialog *)gameRequestDialog didFailWithError:(NSError *)error {
+    @try {
+        [[PluginManager get]
+         dispatchJSResponse:@{@"error": @"Error completing dialog"}
+         withError:nil
+         andRequestId:[self requestId]];
+    }
+    @catch (NSException *exception) {
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
+    }
+}
+
+- (void)gameRequestDialogDidCancel:(FBSDKGameRequestDialog *)gameRequestDialog {
+    @try {
+        [[PluginManager get]
+         dispatchJSResponse:nil
+         withError:nil
+         andRequestId:[self requestId]];
+    }
+    @catch (NSException *exception) {
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
     }
 }
 
