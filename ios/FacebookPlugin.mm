@@ -149,7 +149,7 @@
 - (void)gameRequestDialog:(FBSDKGameRequestDialog *)gameRequestDialog didFailWithError:(NSError *)error {
     @try {
         [[PluginManager get]
-         dispatchJSResponse:@{@"error":error}
+         dispatchJSResponse:@{@"error": @"Error completing dialog"}
          withError:nil
          andRequestId:[self requestId]];
     }
