@@ -849,7 +849,7 @@ public class FacebookPlugin implements IPlugin {
               sendResponse(result.getRequestData(), null, activeRequest);
           }
           public void onCancel() {
-              log("game request result - cancell");
+              log("game request result - cancel");
               sendResponse("", "cancelled", activeRequest);
           }
           public void onError(FacebookException error) {
