@@ -265,7 +265,7 @@ public class FacebookPlugin implements IPlugin {
       path = (new StringBuilder(path)).deleteCharAt(0).toString();
     }
 
-    GraphRequest req = new GraphRequest(AccessToken.getCurrentAccessToken(), path, params, method, new GraphRequest.Callback() {
+    final GraphRequest req = new GraphRequest(AccessToken.getCurrentAccessToken(), path, params, method, new GraphRequest.Callback() {
       @Override
       public void onCompleted(GraphResponse res) {
         if (res.getError() != null) {
@@ -275,7 +275,15 @@ public class FacebookPlugin implements IPlugin {
         }
       }
     });
-    req.executeAndWait();
+    if(_params.has("async")) {
+      new Thread(new Runnable() {
+        public void run() {
+          req.executeAndWait();
+        }
+      }).start();
+    } else {
+      req.executeAndWait();
+    }
   }
 
   public void ui(String s_json, Integer requestId) {
