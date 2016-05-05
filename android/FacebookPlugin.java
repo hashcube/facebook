@@ -379,17 +379,21 @@ public class FacebookPlugin implements IPlugin {
         }
 
         String toString = dialogParams.getString("to");
-        if (toString != null) {
+        String suggestString = dialogParams.getString("suggestions");
 
+        if (toString != null) {
             String[] toIds = toString.split(",");
             ArrayList<String> toList = new ArrayList<String>(Arrays.asList(toIds));
 
-            // warn if more than one specified
             if (toIds.length > 1) {
-                builder.setSuggestions(toList);
-                log("warning - android facebook only supports sending " +
-                    "messages to one user at a time. Sending suggestions."
-                );
+                String[] suggestIds = suggestString.split(",");
+                ArrayList<String> suggestList = new ArrayList<String>(Arrays.asList(suggestIds));
+
+                if (suggestString != null) {
+                  builder.setSuggestions(suggestList);
+                } else {
+                  builder.setSuggestions(toList);
+                }
             } else {
                 builder.setTo(toIds[0]);
             }
