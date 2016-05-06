@@ -386,17 +386,17 @@ public class FacebookPlugin implements IPlugin {
             ArrayList<String> toList = new ArrayList<String>(Arrays.asList(toIds));
 
             if (toIds.length > 1) {
-                String[] suggestIds = suggestString.split(",");
-                ArrayList<String> suggestList = new ArrayList<String>(Arrays.asList(suggestIds));
-
-                if (suggestString != null) {
-                  builder.setSuggestions(suggestList);
-                } else {
-                  builder.setSuggestions(toList);
-                }
+                builder.setSuggestions(toList);
             } else {
                 builder.setTo(toIds[0]);
             }
+        }
+
+        if (suggestString != null) {
+            String[] suggestIds = suggestString.split(",");
+            ArrayList<String> suggestList = new ArrayList<String>(Arrays.asList(suggestIds));
+
+            builder.setSuggestions(suggestList);
         }
 
         GameRequestContent content = builder.build();
