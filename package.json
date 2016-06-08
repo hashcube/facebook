@@ -1,5 +1,5 @@
 {
-  "name": "devkit-facebook",
+  "name": "facebook",
   "version": "3.3.1",
   "devkit": {
     "clientPaths": {

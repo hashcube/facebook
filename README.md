@@ -1,15 +1,20 @@
-devkit-facebook
+Facebook Module for GameClosure Devkit
 ===============
 
 The devkit facebook plugin provides native support with a matching API to the
-JavaScript facebook API. The current version of the native SDKs is **3.20.0**.
+JavaScript facebook API.
 
 ## Setup
 
 ### Installation
 
-Run `devkit install https://github.com/gameclosure/facebook` from
-your devkit2 application directory.
+Add devkit-facebook to your dependencies section of the manifest.
+
+```json
+"dependencies": {
+    "devkit-facebook": "https://github.com/hashcube/facebook.git#master"
+}
+```
 
 ### Config
 
@@ -19,8 +24,8 @@ both iOS and Android.
 ```json
 "addons": {
   "facebook": {
-    "facebookAppID": your-app-id,
-    "facebookDisplayName": your-app-display-name,
+    "facebookAppID": "your-app-id",
+    "facebookDisplayName": "your-app-display-name",
   }
 }
 ```
