@@ -1,3 +1,4 @@
+import device;
 import lib.PubSub;
 from .ResponseTransform import ResponseTransform;
 
@@ -11,7 +12,6 @@ from .ResponseTransform import ResponseTransform;
 function getNativeInterface (pluginName, opts) {
   opts = opts || {};
   var events = new lib.PubSub();
-  var subscribedTo = {};
   GC.plugins.register(pluginName, events);
   return {
     notify: function sendNativeEvent (event, data) {
@@ -53,6 +53,10 @@ function getNativeInterface (pluginName, opts) {
           if (res === '') {
             res = void 0;
           }
+        }
+
+        if (res && res.error && res.error.code === 190) {
+          events.emit('fb:apprevoked');
         }
 
         fn(err, res);
@@ -253,20 +257,6 @@ function createNativeFacebookWrapper () {
       nativeFB.request('getAuthStatus', cb);
     },
 
-    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cost, currency, productId) {
-      var opts = {
-        price: cost, currency: currency, content: productId
-      };
-      nativeFB.notify('sendAppEventPurchased', opts);
-    },
-
-    sendAppEventAchievement: function FBNativeSendAppEventAchievement (ach_name, max_ms) {
-      var opts = {
-        name: ach_name, max_ms: max_ms
-      }
-      nativeFB.notify('sendAppEventAchievement', opts);
-    },
-
     /**
      * @property Event
      */
@@ -278,7 +268,52 @@ function createNativeFacebookWrapper () {
       unsubscribe: function FBNativeEventUnsubscribe (event, cb) {
         nativeFB.unsubscribe(event, cb);
       }
-    }
-  };
+    },
 
+
+    /**
+     * New function shareImage
+     * Uses messenger on native, falls back to regular sharing in browser.
+     */
+    shareImage: function nativeShareImage (opts, cb) {
+      logger.log("facebook - sharing image");
+      opts = JSON.parse(JSON.stringify(opts));
+
+      if (!opts.image) {
+        logger.log('facebook shareImage error - image required')
+        return;
+      }
+
+      if (device.isSimulator) {
+        window.open(opts.image, '_blank');
+        cb && cb();
+      } else {
+
+        var rDataURI = /^data:image\/png;base64,/;
+        if (rDataURI.test(opts.image)) {
+          opts.image = opts.image.replace(rDataURI, '');
+        }
+
+        if (NATIVE && NATIVE.plugins && NATIVE.plugins.sendRequest) {
+          NATIVE.plugins.sendRequest('FacebookPlugin', 'shareImage', opts, cb);
+        }
+      }
+    },
+
+    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cost, currency, product_id) {
+      nativeFB.notify('sendAppEventPurchased', {
+        price: cost,
+        currency: currency,
+        content: product_id
+      });
+    },
+
+    sendAppEventAchievement: function FBNativeSendAppEventAchievement (achievement, count) {
+      nativeFB.notify('sendAppEventAchievement', {
+        name: achievement,
+        count: count
+      });
+    }
+
+  };
 }

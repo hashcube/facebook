@@ -1,13 +1,14 @@
 {
   "name": "devkit-facebook",
-  "version": "2.2.0-beta.1",
+  "version": "3.3.0",
   "devkit": {
     "clientPaths": {
       "facebook": "js"
     },
     "extensions": {
       "android": "android",
-      "ios": "ios"
+      "ios": "ios",
+      "build": "build"
     }
   },
   "devDependencies": {
