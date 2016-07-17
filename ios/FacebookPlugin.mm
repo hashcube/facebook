@@ -117,9 +117,10 @@
         // TODO: params: action_type, action_properties
         // https://developers.facebook.com/docs/sharing/reference/share-dialog
     } else if ([method isEqualToString: @"share"]) {
+        self.requestId = requestId;
         [FBSDKShareDialog showFromViewController:self.tealeafViewController
-                                     withContent:[self resolveContentFromParams: params]
-                                        delegate:nil];
+            withContent:[self resolveContentFromParams: params]
+                delegate:self];
     } else if ([method isEqualToString: @"send"]) {
         [FBSDKMessageDialog showWithContent:[self resolveContentFromParams: params]
                                    delegate:nil];
@@ -168,6 +169,27 @@
     @catch (NSException *exception) {
         NSLog(@"{facebook} Resp Failure to get: %@", exception);
     }
+}
+
+- (void)sharer:(id<FBSDKSharing>)sharer didCompleteWithResults:(NSDictionary *)results {
+    NSLOG(@"{facebook} %@", results);
+    
+    [[PluginManager get] dispatchJSResponse: @{@"success": @true, @"id": results[@"postId"]}
+                                  withError:nil andRequestId:[self requestId]];
+}
+
+- (void)sharer:(id<FBSDKSharing>)sharer didFailWithError:(NSError *)error {
+    NSLOG(@"{facebook} %@", error);
+    
+    [[PluginManager get] dispatchJSResponse: @{@"error":error}
+                                  withError:nil andRequestId:[self requestId]];
+}
+
+- (void)sharerDidCancel:(id<FBSDKSharing>)sharer {
+    NSLOG(@"{facebook} %@", @"Sharer did cancel");
+    
+    [[PluginManager get] dispatchJSResponse: @{@"error":@"Sharer did cancel"}
+                                  withError:nil andRequestId:[self requestId]];
 }
 
 - (void) resolveFilter:(NSString *)filter intoContent:(FBSDKGameRequestContent*)content {
@@ -253,6 +275,11 @@
     } else if ([params objectForKey:@"href"]) {
         FBSDKShareLinkContent *content = [[FBSDKShareLinkContent alloc] init];
         content.contentURL = [params objectForKey:@"href"];
+        content.contentTitle = [params objectForKey:@"title"];
+        content.contentDescription = [params objectForKey:@"description"];
+        NSString *stringPictureUrl = [params objectForKey:@"picture"];
+        NSURL *pictureURL = [NSURL URLWithString:stringPictureUrl];
+        content.imageURL = pictureURL;
         return content;
     }
 

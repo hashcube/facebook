@@ -1,8 +1,9 @@
 #import "PluginManager.h"
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKShareKit/FBSDKGameRequestDialog.h>
+#import <FBSDKShareKit/FBSDKSharing.h>
 
-@interface FacebookPlugin : GCPlugin<FBSDKGameRequestDialogDelegate> {
+@interface FacebookPlugin : GCPlugin<FBSDKGameRequestDialogDelegate, FBSDKSharingDelegate> {
     bool frictionlessRequestsEnabled;
 }
 

@@ -22,6 +22,6 @@
 		"FacebookAppID": "$(facebook.facebookAppID)",
 		"FacebookDisplayName": "$(facebook.facebookDisplayName)",
 		"CFBundleURLTypes[has(CFBundleURLSchemes)].CFBundleURLSchemes[]": "fb$(facebook.facebookAppID)",
-		"LSApplicationQueriesSchemes[]": "fbauth"
+		"LSApplicationQueriesSchemes": ["fbapi","fbapi20130214", "fbapi20130410","fbapi20130702","fbapi20131010","fbapi20131219","fbapi20140410","fbapi20140116","fbapi20150313","fbapi20150629","fbauth","fbauth2","fb-messenger-api20140430"]
 	}
 }
