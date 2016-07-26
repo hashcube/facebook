@@ -62,9 +62,9 @@ IOSResponseTransform.prototype.ui = function ui (req, res) {
     if (Object.keys(res).length === 0 && req.method === 'apprequests') {
       return [];
     }
-
-    return res;
   }
+  
+  return res; 
 };
 
 var rArray = /\[\d+\]$/;
