@@ -404,27 +404,12 @@ public class FacebookPlugin implements IPlugin {
 
     } else if (method.equalsIgnoreCase("share") || method.equalsIgnoreCase("share_open_graph")) {
 
-        // TODO: change so parameters match js api
-        String imageUrl = dialogParams.getString("imageUrl");
-
-        // setContentUrl doesnt exist, even though this is verbatim docs example
-        // can only submit images
-        /*
-        if (ShareDialog.canShow(ShareLinkContent.class)) {
-            ShareLinkContent linkContent = new ShareLinkContent.Builder()
-                .setContentTitle(dialogParams.getString("title"))
-                .setContentDescription(dialogParams.getString("description"));
-                .setContentUrl(Uri.parse(href))
-                .build();
-            shareDialog.show(linkContent);
-        }
-        */
-
       ShareLinkContent linkContent = new ShareLinkContent.Builder()
-          .setContentTitle(dialogParams.getString("title"))
-          .setContentDescription(dialogParams.getString("description"))
-          .setImageUrl(Uri.parse(imageUrl))
-          .build();
+        .setContentUrl(Uri.parse(dialogParams.getString("href")))
+        .setContentTitle(dialogParams.getString("title"))
+        .setContentDescription(dialogParams.getString("description"))
+        .setImageUrl(Uri.parse(dialogParams.getString("picture")))
+        .build();
       shareDialog.show(linkContent);
       sendResponse(getResponse(), null, requestId);
     } else {
