@@ -16,6 +16,10 @@ Add devkit-facebook to your dependencies section of the manifest.
 }
 ```
 
+OR
+
+Run 'devkit install https://github.com/hashcube/facebook.git'
+
 ### Config
 
 There are a few keys you need to add to your _manifest.json_. This should cover
