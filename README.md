@@ -10,7 +10,7 @@ JavaScript facebook API.
 
 Add devkit-facebook to your dependencies section of the manifest.
 
-Run 
+Run
 ``` "devkit install https://github.com/hashcube/facebook.git" ```
 
 ### Config

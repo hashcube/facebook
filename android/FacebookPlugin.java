@@ -275,15 +275,11 @@ public class FacebookPlugin implements IPlugin {
         }
       }
     });
-    if(_params.has("async")) {
-      new Thread(new Runnable() {
-        public void run() {
-          req.executeAndWait();
-        }
-      }).start();
-    } else {
-      req.executeAndWait();
-    }
+    new Thread(new Runnable() {
+      public void run() {
+        req.executeAndWait();
+      }
+    }).start();
   }
 
   public void ui(String s_json, Integer requestId) {
