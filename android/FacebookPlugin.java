@@ -28,8 +28,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Currency;
 import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
 
 import android.net.Uri;
 import android.view.Window;
@@ -78,8 +80,6 @@ public class FacebookPlugin implements IPlugin {
 
   private String appID = null;
   private String userID = null;
-  private AppEventsLogger fbEventLogger;
-
 
   public static final int INVALID_ERROR = -2;
   private int REQUEST_CODE_SHARE_TO_MESSENGER = 1;
@@ -91,6 +91,7 @@ public class FacebookPlugin implements IPlugin {
   private GameRequestDialog requestDialog;
   private ShareDialog shareDialog;
 
+  private AppEventsLogger aeLogger = null;
 
   void onJSONException (JSONException e) {
     logger.log("{facebook} JSONException:", e.getMessage());
@@ -114,6 +115,9 @@ public class FacebookPlugin implements IPlugin {
     logger.log("\t", res);
 
     appID = res.optString("appId", "");
+
+    // Create an App Events logger
+    aeLogger = AppEventsLogger.newLogger(_activity);
   }
 
   public void getLoginStatus(String s_opts, Integer requestId) {
@@ -544,6 +548,85 @@ public class FacebookPlugin implements IPlugin {
       }
   }
 
+  public void logEvent (String s_json) {
+    logger.log("{facebook} logEvent");
+
+    JSONObject json        = null;
+    String     eventName   = null;
+    Double     valueToSum  = null;
+    JSONObject _parameters = null;
+    Bundle     parameters  = null;
+
+    // Parse JSON;
+    try {
+      json        = new JSONObject(s_json);
+      eventName   = json.optString("eventName");
+      valueToSum  = json.optDouble("valueToSum", 0);
+      _parameters = json.optJSONObject("parameters");
+    } catch (JSONException e) {
+      onJSONException(e);
+      log("logEvent failed to parse JSON blob");
+      return;
+    }
+
+    // Convert JSONObject _parameters into a Bundle
+    if (_parameters.length() > 0) {
+      try {
+        parameters = BundleJSONConverter.convertToBundle(_parameters);
+      } catch (JSONException e) {
+        log("logEvent - error converting JSONObject to Bundle");
+      }
+    }
+
+    // Log the event
+    if(valueToSum != null && valueToSum != 0){
+      if(parameters != null){
+        aeLogger.logEvent(eventName, valueToSum, parameters);
+      } else {
+        aeLogger.logEvent(eventName, valueToSum);
+      }
+    } else {
+      if(parameters != null){
+        aeLogger.logEvent(eventName, parameters);
+      } else {
+        aeLogger.logEvent(eventName);
+      }
+    }
+  }
+
+  public void logPurchase (String s_json) {
+    logger.log("{facebook} logPurchase");
+
+    JSONObject json           = null;
+    Double     purchaseAmount = null;
+    String     currency       = null;
+    JSONObject _parameters    = null;
+    Bundle     parameters     = null;
+
+    // Parse JSON;
+    try {
+      json           = new JSONObject(s_json);
+      purchaseAmount = json.optDouble("purchaseAmount");
+      currency       = json.optString("currency");
+      _parameters    = json.optJSONObject("parameters");
+    } catch (JSONException e) {
+      onJSONException(e);
+      log("logEvent failed to parse JSON blob");
+      return;
+    }
+
+    // Convert JSONObject _parameters into a Bundle
+    if (_parameters.length() > 0) {
+      try {
+        parameters = BundleJSONConverter.convertToBundle(_parameters);
+      } catch (JSONException e) {
+        log("logPurchase - error converting JSONObject to Bundle");
+      }
+    }
+
+    // Log the purchase
+    aeLogger.logPurchase(BigDecimal.valueOf(purchaseAmount), Currency.getInstance(currency), parameters);
+  }
 
   // ---------------------------------------------------------------------------
   // Facebook Interface Utilities
@@ -874,7 +957,6 @@ public class FacebookPlugin implements IPlugin {
           }
       });
 
-      fbEventLogger = AppEventsLogger.newLogger(_activity);
       shareDialog = new ShareDialog(_activity);
 
       JSONObject ready = new JSONObject();
@@ -905,6 +987,9 @@ public class FacebookPlugin implements IPlugin {
   }
 
   public void onResume() {
+    // Activate AppEvents
+    logger.log("{facebook} activating AppEventsLogger");
+    AppEventsLogger.activateApp(_activity);
   }
 
   public void onRenderResume() {
@@ -917,7 +1002,9 @@ public class FacebookPlugin implements IPlugin {
   }
 
   public void onPause() {
-
+    // Deactivate AppEvents
+    logger.log("{facebook} deactivating AppEventsLogger");
+    AppEventsLogger.deactivateApp(_activity);
   }
 
   public void onRenderPause() {
@@ -945,7 +1032,7 @@ public class FacebookPlugin implements IPlugin {
       JSONObject ogData = new JSONObject(param);
       parameters.putString(AppEventsConstants.EVENT_PARAM_DESCRIPTION, (String) ogData.get("name"));
       parameters.putString(AppEventsConstants.EVENT_PARAM_NUM_ITEMS, Integer.toString((Integer) ogData.get("count")));
-      fbEventLogger.logEvent(AppEventsConstants.EVENT_NAME_UNLOCKED_ACHIEVEMENT,
+      aeLogger.logEvent(AppEventsConstants.EVENT_NAME_UNLOCKED_ACHIEVEMENT,
                        parameters);
     } catch (Exception e) {
       logger.log("{facebook-native} Exception while processing achievement_send_fb event:", e.getMessage());
@@ -958,7 +1045,7 @@ public class FacebookPlugin implements IPlugin {
       JSONObject ogData = new JSONObject(param);
       parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_TYPE, (String) ogData.get("currency"));
       parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_ID, (String) ogData.get("content"));
-      fbEventLogger.logEvent(AppEventsConstants.EVENT_NAME_PURCHASED,
+      aeLogger.logEvent(AppEventsConstants.EVENT_NAME_PURCHASED,
                        (Double) ogData.get("price"),
                        parameters);
     } catch (Exception e) {

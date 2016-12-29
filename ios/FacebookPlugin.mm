@@ -363,6 +363,24 @@
              ];
 }
 
+- (void) logEvent:(NSDictionary *)opts {
+  NSLOG(@"{facebook} logEvent");
+  NSString     * eventName  = opts[@"eventName"];
+  NSNumber     * valueToSum = opts[@"valueToSum"];
+  NSDictionary * parameters = opts[@"parameters"];
+  if(valueToSum == [NSNull null]){ valueToSum = nil; }
+  if(parameters == [NSNull null]){ parameters = nil; }
+  [FBAppEvents logEvent:eventName valueToSum:[valueToSum doubleValue] parameters:parameters ];
+}
+
+- (void) logPurchase:(NSDictionary *)opts {
+  NSLOG(@"{facebook} logPurchase");
+  NSNumber     *purchaseAmount = opts[@"purchaseAmount"];
+  NSString     *currency       = opts[@"currency"];
+  NSDictionary *parameters     = opts[@"parameters"];
+  if(parameters == [NSNull null]){ parameters = nil; }
+  [FBAppEvents logPurchase:[purchaseAmount doubleValue] currency:currency parameters:parameters];
+}
 
 // -----------------------------------------------------------------------------
 // HELPER FUNCTIONS
