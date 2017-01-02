@@ -579,14 +579,14 @@ public class FacebookPlugin implements IPlugin {
     }
 
     // Log the event
-    if(valueToSum != null && valueToSum != 0){
-      if(parameters != null){
+    if(valueToSum != null && valueToSum != 0) {
+      if(parameters != null) {
         aeLogger.logEvent(eventName, valueToSum, parameters);
       } else {
         aeLogger.logEvent(eventName, valueToSum);
       }
     } else {
-      if(parameters != null){
+      if(parameters != null) {
         aeLogger.logEvent(eventName, parameters);
       } else {
         aeLogger.logEvent(eventName);
