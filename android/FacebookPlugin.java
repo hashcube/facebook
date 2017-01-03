@@ -1026,33 +1026,6 @@ public class FacebookPlugin implements IPlugin {
 
   }
 
-  public void sendAppEventAchievement(String param) {
-    Bundle parameters = new Bundle();
-    try {
-      JSONObject ogData = new JSONObject(param);
-      parameters.putString(AppEventsConstants.EVENT_PARAM_DESCRIPTION, (String) ogData.get("name"));
-      parameters.putString(AppEventsConstants.EVENT_PARAM_NUM_ITEMS, Integer.toString((Integer) ogData.get("count")));
-      aeLogger.logEvent(AppEventsConstants.EVENT_NAME_UNLOCKED_ACHIEVEMENT,
-                       parameters);
-    } catch (Exception e) {
-      logger.log("{facebook-native} Exception while processing achievement_send_fb event:", e.getMessage());
-    }
-  }
-
-  public void sendAppEventPurchased(String param) {
-    Bundle parameters = new Bundle();
-    try {
-      JSONObject ogData = new JSONObject(param);
-      parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_TYPE, (String) ogData.get("currency"));
-      parameters.putString(AppEventsConstants.EVENT_PARAM_CONTENT_ID, (String) ogData.get("content"));
-      aeLogger.logEvent(AppEventsConstants.EVENT_NAME_PURCHASED,
-                       (Double) ogData.get("price"),
-                       parameters);
-    } catch (Exception e) {
-      logger.log("{facebook-native} Exception while processing purchased_send_fb event:", e.getMessage());
-    }
-  }
-
   @Override
   public void onActivityResult(Integer requestCode, Integer resultCode, Intent data) {
     callbackManager.onActivityResult(requestCode, resultCode, data);
