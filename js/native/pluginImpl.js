@@ -371,21 +371,6 @@ function createNativeFacebookWrapper () {
           NATIVE.plugins.sendRequest('FacebookPlugin', 'shareImage', opts, cb);
         }
       }
-    },
-
-    sendAppEventPurchased: function FBNativeSendAppEventPurchased (cost, currency, product_id) {
-      nativeFB.notify('sendAppEventPurchased', {
-        price: cost,
-        currency: currency,
-        content: product_id
-      });
-    },
-
-    sendAppEventAchievement: function FBNativeSendAppEventAchievement (achievement, count) {
-      nativeFB.notify('sendAppEventAchievement', {
-        name: achievement,
-        count: count
-      });
     }
 
   };
