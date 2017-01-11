@@ -370,7 +370,7 @@
   NSDictionary * parameters = opts[@"parameters"];
   if(valueToSum == [NSNull null]){ valueToSum = nil; }
   if(parameters == [NSNull null]){ parameters = nil; }
-  [FBAppEvents logEvent:eventName valueToSum:[valueToSum doubleValue] parameters:parameters ];
+  [FBSDKAppEvents logEvent:eventName valueToSum:[valueToSum doubleValue] parameters:parameters ];
 }
 
 - (void) logPurchase:(NSDictionary *)opts {
@@ -379,7 +379,7 @@
   NSString     *currency       = opts[@"currency"];
   NSDictionary *parameters     = opts[@"parameters"];
   if(parameters == [NSNull null]){ parameters = nil; }
-  [FBAppEvents logPurchase:[purchaseAmount doubleValue] currency:currency parameters:parameters];
+  [FBSDKAppEvents logPurchase:[purchaseAmount doubleValue] currency:currency parameters:parameters];
 }
 
 // -----------------------------------------------------------------------------
