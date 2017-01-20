@@ -910,6 +910,12 @@ public class FacebookPlugin implements IPlugin {
                               GraphResponse response) {
                               // Application code
 
+                              if (object == null) {
+                                  // Early return if graphResponse object is null
+                                  log("{facebook} GraphResponse Object is null: ", response.toString());
+                                  handleError(new FacebookOperationCanceledException(), activeRequest);
+                                  return;
+                              }
                               try {
                                   userID = object.getString("id");
                               } catch (JSONException e) {
