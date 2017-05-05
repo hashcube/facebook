@@ -54,7 +54,10 @@ public final class ServerProtocol {
     public static final String DIALOG_PARAM_RESPONSE_TYPE = "response_type";
     public static final String DIALOG_PARAM_RETURN_SCOPES = "return_scopes";
     public static final String DIALOG_PARAM_SCOPE = "scope";
+    public static final String DIALOG_PARAM_SSO_DEVICE = "sso";
     public static final String DIALOG_PARAM_DEFAULT_AUDIENCE = "default_audience";
+    public static final String DIALOG_PARAM_SDK_VERSION = "sdk";
+    public static final String DIALOG_PARAM_STATE = "state";
     public static final String DIALOG_REREQUEST_AUTH_TYPE = "rerequest";
     public static final String DIALOG_RESPONSE_TYPE_TOKEN_AND_SIGNED_REQUEST
             = "token,signed_request";
@@ -73,12 +76,13 @@ public final class ServerProtocol {
     // URL components
     private static final String GRAPH_VIDEO_URL_FORMAT = "https://graph-video.%s";
     private static final String GRAPH_URL_FORMAT = "https://graph.%s";
-    public static final String GRAPH_API_VERSION = "v2.3";
+    private static final String GRAPH_API_VERSION = "v2.9";
 
     public static final Collection<String> errorsProxyAuthDisabled =
             Utility.unmodifiableCollection("service_disabled", "AndroidAuthKillSwitchException");
     public static final Collection<String> errorsUserCanceled =
             Utility.unmodifiableCollection("access_denied", "OAuthAccessDeniedException");
+    public static final String errorConnectionFailure = "CONNECTION_FAILURE";
 
     public static final String getDialogAuthority() {
         return String.format(DIALOG_AUTHORITY_FORMAT, FacebookSdk.getFacebookDomain());
@@ -92,7 +96,7 @@ public final class ServerProtocol {
         return String.format(GRAPH_VIDEO_URL_FORMAT, FacebookSdk.getFacebookDomain());
     }
 
-    public static final String getAPIVersion() {
+    public static final String getDefaultAPIVersion() {
         return GRAPH_API_VERSION;
     }
 

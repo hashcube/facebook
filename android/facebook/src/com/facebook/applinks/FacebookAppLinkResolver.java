@@ -23,19 +23,25 @@ package com.facebook.applinks;
 import android.net.Uri;
 import android.os.Bundle;
 
+import com.facebook.AccessToken;
 import com.facebook.FacebookRequestError;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import bolts.AppLink;
 import bolts.AppLinkResolver;
 import bolts.Continuation;
 import bolts.Task;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.*;
 
 /**
  * Provides an implementation for the {@link AppLinkResolver AppLinkResolver} interface that uses
@@ -92,7 +98,7 @@ public class FacebookAppLinkResolver implements AppLinkResolver {
         StringBuilder graphRequestFields = new StringBuilder();
 
         for (Uri uri : uris) {
-            AppLink appLink = null;
+            AppLink appLink;
             synchronized (cachedAppLinks) {
                 appLink = cachedAppLinks.get(uri);
             }
@@ -124,9 +130,10 @@ public class FacebookAppLinkResolver implements AppLinkResolver {
                         APP_LINK_KEY,
                         APP_LINK_ANDROID_TARGET_KEY,
                         APP_LINK_WEB_TARGET_KEY));
-
         GraphRequest appLinkRequest = new GraphRequest(
-                null, /* Access Token */
+                // We will use the current access token if we have one else we will use the client
+                // token
+                AccessToken.getCurrentAccessToken(), /* Access Token */
                 "", /* Graph path */
                 appLinkRequestParameters, /* Query parameters */
                 null, /* HttpMethod */
@@ -151,7 +158,7 @@ public class FacebookAppLinkResolver implements AppLinkResolver {
                                 continue;
                             }
 
-                            JSONObject urlData = null;
+                            JSONObject urlData;
                             try {
                                 urlData = responseJson.getJSONObject(uri.toString());
                                 JSONObject appLinkData = urlData.getJSONObject(APP_LINK_KEY);

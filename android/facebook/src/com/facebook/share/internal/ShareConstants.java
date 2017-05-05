@@ -27,31 +27,41 @@ package com.facebook.share.internal;
  */
 public class ShareConstants {
 
-    public static final int MIN_API_VERSION_FOR_WEB_FALLBACK_DIALOGS = 14;
+    // Common Web Params
+    public static final String WEB_DIALOG_PARAM_ACTION_TYPE = "action_type";
 
+    // Game Request Dialog Params
     public static final String WEB_DIALOG_PARAM_DATA = "data";
     public static final String WEB_DIALOG_PARAM_MESSAGE = "message";
     public static final String WEB_DIALOG_PARAM_TO = "to";
     public static final String WEB_DIALOG_PARAM_TITLE = "title";
-    public static final String WEB_DIALOG_PARAM_ACTION_TYPE = "action_type";
     public static final String WEB_DIALOG_PARAM_OBJECT_ID = "object_id";
     public static final String WEB_DIALOG_PARAM_FILTERS = "filters";
     public static final String WEB_DIALOG_PARAM_SUGGESTIONS = "suggestions";
 
+    // Web Share Dialog Params
     public static final String WEB_DIALOG_PARAM_HREF = "href";
     public static final String WEB_DIALOG_PARAM_ACTION_PROPERTIES = "action_properties";
+    public static final String WEB_DIALOG_PARAM_QUOTE = "quote";
+    public static final String WEB_DIALOG_PARAM_HASHTAG = "hashtag";
+    // Images from a SharePhotoContent
+    public static final String WEB_DIALOG_PARAM_MEDIA =   "media";
 
+    // Feed Dialog Params
     public static final String WEB_DIALOG_PARAM_LINK = "link";
     public static final String WEB_DIALOG_PARAM_PICTURE = "picture";
     public static final String WEB_DIALOG_PARAM_NAME = "name";
     public static final String WEB_DIALOG_PARAM_DESCRIPTION = "description";
 
+    // Join App Group Dialog Params
     public static final String WEB_DIALOG_PARAM_ID = "id";
 
+    // Create App Group Dialog Params
     public static final String WEB_DIALOG_PARAM_PRIVACY = "privacy";
 
     public static final String WEB_DIALOG_RESULT_PARAM_POST_ID = "post_id";
     public static final String WEB_DIALOG_RESULT_PARAM_REQUEST_ID = "request";
+    public static final String WEB_DIALOG_RESULT_PARAM_TO_ARRAY_MEMBER = "to[%d]";
 
     // Extras supported for ACTION_FEED_DIALOG:
     public static final String LEGACY_PLACE_TAG = "com.facebook.platform.extra.PLACE";
@@ -68,6 +78,7 @@ public class ShareConstants {
     public static final String PLACE_ID = "PLACE";
     public static final String PEOPLE_IDS = "FRIENDS";
     public static final String CONTENT_URL = "LINK";
+    public static final String HASHTAG = "HASHTAG";
     public static final String IMAGE_URL = "IMAGE";
     public static final String TITLE = "TITLE";
     public static final String DESCRIPTION = "DESCRIPTION";
@@ -75,6 +86,12 @@ public class ShareConstants {
     public static final String DATA_FAILURES_FATAL = "DATA_FAILURES_FATAL";
     public static final String PHOTOS = "PHOTOS";
     public static final String VIDEO_URL = "VIDEO";
+    public static final String QUOTE = "QUOTE";
+    public static final String MEDIA = "MEDIA";
+
+    // Multimedia args
+    public static final String MEDIA_TYPE = "type";
+    public static final String MEDIA_URI = "uri";
 
     // Extras supported for ACTION_OGACTIONPUBLISH_DIALOG:
     public static final String LEGACY_ACTION = "com.facebook.platform.extra.ACTION";
@@ -93,6 +110,10 @@ public class ShareConstants {
     // Method args supported for ACTION_APPINVITE_DIALOG
     public static final String APPLINK_URL = "app_link_url";
     public static final String PREVIEW_IMAGE_URL = "preview_image_url";
+    public static final String PROMO_CODE = "promo_code";
+    public static final String PROMO_TEXT = "promo_text";
+    public static final String DEEPLINK_CONTEXT = "deeplink_context";
+    public static final String DESTINATION = "destination";
 
     // Extras supported for MESSAGE_GET_LIKE_STATUS_REQUEST:
     public static final String EXTRA_OBJECT_ID = "com.facebook.platform.extra.OBJECT_ID";
@@ -115,4 +136,15 @@ public class ShareConstants {
     public static final String RESULT_POST_ID = "postId";
 
     public static final int MAXIMUM_PHOTO_COUNT = 6;
+    public static final int MAXIMUM_MEDIA_COUNT = 6;
+    static final String MY_VIDEOS = "me/videos";
+
+    // Feed Dialog
+    public static final String FEED_TO_PARAM = "to";
+    public static final String FEED_LINK_PARAM = "link";
+    public static final String FEED_PICTURE_PARAM = "picture";
+    public static final String FEED_SOURCE_PARAM = "source";
+    public static final String FEED_NAME_PARAM = "name";
+    public static final String FEED_CAPTION_PARAM = "caption";
+    public static final String FEED_DESCRIPTION_PARAM = "description";
 }

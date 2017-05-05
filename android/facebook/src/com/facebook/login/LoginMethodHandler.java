@@ -25,16 +25,15 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Base64;
+import android.util.Log;
 
 import com.facebook.AccessToken;
 import com.facebook.AccessTokenSource;
-import com.facebook.FacebookAuthorizationException;
 import com.facebook.FacebookException;
 import com.facebook.appevents.AppEventsLogger;
 import com.facebook.internal.AnalyticsEvents;
 import com.facebook.internal.NativeProtocol;
 import com.facebook.internal.Utility;
-import com.facebook.internal.Validate;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -81,6 +80,21 @@ abstract class LoginMethodHandler implements Parcelable {
     }
 
     void cancel() {
+    }
+
+    void putChallengeParam(JSONObject param) throws JSONException {
+    }
+
+    protected String getClientState(String authId) {
+        JSONObject param = new JSONObject();
+        try {
+            param.put(LoginLogger.EVENT_PARAM_AUTH_LOGGER_ID, authId);
+            param.put(LoginLogger.EVENT_PARAM_METHOD, getNameForLogging());
+            putChallengeParam(param);
+        } catch (JSONException e) {
+            Log.w("LoginMethodHandler", "Error creating client state json: " + e.getMessage());
+        }
+        return param.toString();
     }
 
     protected void addLoggingExtra(String key, Object value) {
@@ -170,7 +184,7 @@ abstract class LoginMethodHandler implements Parcelable {
                 new Date());
     }
 
-    private static String getUserIDFromSignedRequest(
+    static String getUserIDFromSignedRequest(
             String signedRequest) throws FacebookException {
         if (signedRequest == null || signedRequest.isEmpty()) {
             throw new FacebookException(
