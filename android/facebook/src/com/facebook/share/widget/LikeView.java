@@ -287,10 +287,9 @@ public class LikeView extends FrameLayout {
     private int edgePadding;
     private int internalPadding;
 
-    private Fragment parentFragment;
+    private FragmentWrapper parentFragment;
 
     private boolean explicitlyDisabled;
-    private boolean implicitlyDisabled;
 
     /**
      * Constructor
@@ -412,10 +411,22 @@ public class LikeView extends FrameLayout {
      * {@link Fragment#onActivityResult(int, int, android.content.Intent) onActivityResult}
      * call rather than the Activity, upon completion of Likes from this view.
      *
-     * @param fragment Fragment that is hosting the LikeView.
+     * @param fragment android.support.v4.app.Fragment that is hosting the LikeView.
      */
     public void setFragment(Fragment fragment) {
-        this.parentFragment = fragment;
+        this.parentFragment = new FragmentWrapper(fragment);
+    }
+
+    /**
+     * Sets the parent Fragment which is hosting this LikeView. This allows the LikeView to be
+     * embedded inside a Fragment, and will allow the fragment to receive the
+     * {@link Fragment#onActivityResult(int, int, android.content.Intent) onActivityResult}
+     * call rather than the Activity, upon completion of Likes from this view.
+     *
+     * @param fragment android.app.Fragment that is hosting the LikeView.
+     */
+    public void setFragment(android.app.Fragment fragment) {
+        this.parentFragment = new FragmentWrapper(fragment);
     }
 
     @Override
@@ -445,19 +456,19 @@ public class LikeView extends FrameLayout {
         }
 
         objectId = Utility.coerceValueIfNullOrEmpty(
-                a.getString(R.styleable.com_facebook_like_view_object_id), null);
+                a.getString(R.styleable.com_facebook_like_view_com_facebook_object_id), null);
         objectType = ObjectType.fromInt(
-                a.getInt(R.styleable.com_facebook_like_view_object_type,
+                a.getInt(R.styleable.com_facebook_like_view_com_facebook_object_type,
                         ObjectType.DEFAULT.getValue()));
         likeViewStyle = Style.fromInt(
-                a.getInt(R.styleable.com_facebook_like_view_style,
+                a.getInt(R.styleable.com_facebook_like_view_com_facebook_style,
                         Style.DEFAULT.getValue()));
         if (likeViewStyle == null) {
             throw new IllegalArgumentException("Unsupported value for LikeView 'style'");
         }
 
         auxiliaryViewPosition = AuxiliaryViewPosition.fromInt(
-                a.getInt(R.styleable.com_facebook_like_view_auxiliary_view_position,
+                a.getInt(R.styleable.com_facebook_like_view_com_facebook_auxiliary_view_position,
                         AuxiliaryViewPosition.DEFAULT.getValue()));
         if (auxiliaryViewPosition == null) {
             throw new IllegalArgumentException(
@@ -465,7 +476,7 @@ public class LikeView extends FrameLayout {
         }
 
         horizontalAlignment = HorizontalAlignment.fromInt(
-                a.getInt(R.styleable.com_facebook_like_view_horizontal_alignment,
+                a.getInt(R.styleable.com_facebook_like_view_com_facebook_horizontal_alignment,
                         HorizontalAlignment.DEFAULT.getValue()));
         if (horizontalAlignment == null) {
             throw new IllegalArgumentException(
@@ -473,7 +484,7 @@ public class LikeView extends FrameLayout {
         }
 
         foregroundColor = a.getColor(
-                R.styleable.com_facebook_like_view_foreground_color, NO_FOREGROUND_COLOR);
+                R.styleable.com_facebook_like_view_com_facebook_foreground_color, NO_FOREGROUND_COLOR);
 
         a.recycle();
     }
@@ -555,15 +566,7 @@ public class LikeView extends FrameLayout {
         if (likeActionController != null) {
             Activity activity = null;
             if (parentFragment == null) {
-                Context context = getContext();
-                if (context instanceof Activity) {
-                    activity = (Activity) context;
-                } else if (context instanceof ContextWrapper) {
-                    Context baseContext = ((ContextWrapper) context).getBaseContext();
-                    if (baseContext instanceof Activity) {
-                        activity = (Activity) baseContext;
-                    }
-                }
+                activity = getActivity();
             }
 
             likeActionController.toggleLike(
@@ -571,6 +574,18 @@ public class LikeView extends FrameLayout {
                     parentFragment,
                     getAnalyticsParameters());
         }
+    }
+
+    private Activity getActivity() {
+        Context context = getContext();
+        while (!(context instanceof Activity) && context instanceof ContextWrapper) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+
+        if (context instanceof Activity) {
+            return (Activity) context;
+        }
+        throw new FacebookException("Unable to get Activity.");
     }
 
     private Bundle getAnalyticsParameters() {
@@ -603,15 +618,16 @@ public class LikeView extends FrameLayout {
         }
 
         creationCallback = new LikeActionControllerCreationCallback();
-        LikeActionController.getControllerForObjectId(
-                newObjectId,
-                newObjectType,
-                creationCallback);
+        if (!isInEditMode()) {
+            LikeActionController.getControllerForObjectId(
+                    newObjectId,
+                    newObjectType,
+                    creationCallback);
+        }
     }
 
     private void associateWithLikeActionController(LikeActionController likeActionController) {
         this.likeActionController = likeActionController;
-        implicitlyDisabled = likeActionController.shouldDisableView();
 
         this.broadcastReceiver = new LikeControllerBroadcastReceiver();
         LocalBroadcastManager localBroadcastManager =
@@ -648,9 +664,7 @@ public class LikeView extends FrameLayout {
     }
 
     private void updateLikeStateAndLayout() {
-        boolean enabled = !implicitlyDisabled && !explicitlyDisabled;
-        super.setEnabled(enabled);
-        likeButton.setEnabled(enabled);
+        boolean enabled = !explicitlyDisabled;
 
         if (likeActionController == null) {
             likeButton.setSelected(false);
@@ -660,7 +674,12 @@ public class LikeView extends FrameLayout {
             likeButton.setSelected(likeActionController.isObjectLiked());
             socialSentenceView.setText(likeActionController.getSocialSentence());
             likeBoxCountView.setText(likeActionController.getLikeCountString());
+
+            enabled &= likeActionController.shouldEnableView();
         }
+
+        super.setEnabled(enabled);
+        likeButton.setEnabled(enabled);
 
         updateLayout();
     }
@@ -819,7 +838,7 @@ public class LikeView extends FrameLayout {
             }
 
             if (likeActionController != null) {
-                if (likeActionController.shouldDisableView()) {
+                if (!likeActionController.shouldEnableView()) {
                     error = new FacebookException(
                             "Cannot use LikeView. The device may not be supported.");
                 }

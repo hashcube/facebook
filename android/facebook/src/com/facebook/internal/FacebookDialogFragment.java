@@ -110,14 +110,26 @@ public class FacebookDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        // Prevents an NPE crash in the support library
+        if (dialog == null) {
+            onCompleteWebDialog(null, null);
+            setShowsDialog(false);
+        }
         return dialog;
+    }
+
+    @Override
+    public void onResume () {
+        super.onResume();
+        if (this.dialog instanceof WebDialog) {
+            ((WebDialog)this.dialog).resize();
+        }
     }
 
     @Override
     public void onConfigurationChanged (Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-
-        if (this.dialog instanceof WebDialog) {
+        if (this.dialog instanceof WebDialog && isResumed()) {
             ((WebDialog)this.dialog).resize();
         }
     }

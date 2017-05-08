@@ -22,6 +22,7 @@ package com.facebook.share.model;
 
 import android.net.Uri;
 import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.annotation.Nullable;
 
 /**
@@ -29,14 +30,16 @@ import android.support.annotation.Nullable;
  *
  * Use {@link ShareVideo.Builder} to create instances
  */
-public final class ShareVideo implements ShareModel {
+public final class ShareVideo extends ShareMedia {
     private final Uri localUrl;
 
     private ShareVideo(final Builder builder) {
+        super(builder);
         this.localUrl = builder.localUrl;
     }
 
     ShareVideo(final Parcel in) {
+        super(in);
         this.localUrl = in.readParcelable(Uri.class.getClassLoader());
     }
 
@@ -54,24 +57,33 @@ public final class ShareVideo implements ShareModel {
     }
 
     public void writeToParcel(final Parcel out, final int flags) {
+        super.writeToParcel(out, flags);
         out.writeParcelable(this.localUrl, 0);
     }
 
-    @SuppressWarnings("unused")
-    public static final Creator<ShareVideo> CREATOR = new Creator<ShareVideo>() {
-        public ShareVideo createFromParcel(final Parcel in) {
-            return new ShareVideo(in);
-        }
+    public static final Parcelable.Creator<ShareVideo> CREATOR =
+        new Parcelable.Creator<ShareVideo>() {
 
-        public ShareVideo[] newArray(final int size) {
-            return new ShareVideo[size];
-        }
-    };
+            @Override
+            public ShareVideo createFromParcel(final Parcel source) {
+                return new ShareVideo(source);
+            }
+
+            @Override
+            public ShareVideo[] newArray(final int size) {
+                return new ShareVideo[size];
+            }
+        };
+
+    @Override
+    public Type getMediaType() {
+        return Type.VIDEO;
+    }
 
     /**
-     * Builder for the {@link com.facebook.share.model.ShareVideo} interface.
+     * Builder for the {@link com.facebook.share.model.ShareVideo} class.
      */
-    public static final class Builder implements ShareModelBuilder<ShareVideo, Builder> {
+    public static final class Builder extends ShareMedia.Builder<ShareVideo, Builder> {
         private Uri localUrl;
 
         /**
@@ -94,11 +106,11 @@ public final class ShareVideo implements ShareModel {
             if (model == null) {
                 return this;
             }
-            return this.setLocalUrl(model.getLocalUrl());
+            return super.readFrom(model)
+                    .setLocalUrl(model.getLocalUrl());
         }
 
-        @Override
-        public Builder readFrom(final Parcel parcel) {
+        Builder readFrom(final Parcel parcel) {
             return this.readFrom(
                     (ShareVideo) parcel.readParcelable(ShareVideo.class.getClassLoader()));
         }

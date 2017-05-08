@@ -20,22 +20,25 @@
 
 package com.facebook;
 
-import android.content.ContentResolver;
+import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Base64;
 import android.util.Log;
 
 import com.facebook.appevents.AppEventsLogger;
+import com.facebook.internal.AppEventsLoggerUtility;
+import com.facebook.internal.FetchedAppSettingsManager;
+import com.facebook.internal.LockOnGetVariable;
 import com.facebook.internal.BoltsMeasurementEventListener;
 import com.facebook.internal.AttributionIdentifiers;
+import com.facebook.internal.NativeProtocol;
+import com.facebook.internal.ServerProtocol;
 import com.facebook.internal.Utility;
 import com.facebook.internal.Validate;
 
@@ -43,12 +46,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,33 +64,33 @@ public final class FacebookSdk {
     private static final String TAG = FacebookSdk.class.getCanonicalName();
     private static final HashSet<LoggingBehavior> loggingBehaviors =
             new HashSet<LoggingBehavior>(Arrays.asList(LoggingBehavior.DEVELOPER_ERRORS));
+    private static final int DEFAULT_CALLBACK_REQUEST_CODE_OFFSET = 0xface;
+
     private static volatile Executor executor;
     private static volatile String applicationId;
     private static volatile String applicationName;
     private static volatile String appClientToken;
+    private static volatile int webDialogTheme;
+    private static volatile Boolean autoLogAppEventsEnabled;
     private static final String FACEBOOK_COM = "facebook.com";
     private static volatile String facebookDomain = FACEBOOK_COM;
     private static AtomicLong onProgressThreshold = new AtomicLong(65536);
     private static volatile boolean isDebugEnabled = BuildConfig.DEBUG;
     private static boolean isLegacyTokenUpgradeSupported = false;
-    private static File cacheDir;
+    private static LockOnGetVariable<File> cacheDir;
     private static Context applicationContext;
     private static final int DEFAULT_CORE_POOL_SIZE = 5;
     private static final int DEFAULT_MAXIMUM_POOL_SIZE = 128;
     private static final int DEFAULT_KEEP_ALIVE = 1;
-    private static int callbackRequestCodeOffset = 0xface;
+    private static int callbackRequestCodeOffset = DEFAULT_CALLBACK_REQUEST_CODE_OFFSET;
     private static final Object LOCK = new Object();
+    private static final int DEFAULT_THEME = R.style.com_facebook_activity_theme;
+    private static String graphApiVersion = ServerProtocol.getDefaultAPIVersion();
 
     private static final int MAX_REQUEST_CODE_RANGE = 100;
 
-    private static final Uri ATTRIBUTION_ID_CONTENT_URI =
-            Uri.parse("content://com.facebook.katana.provider.AttributionIdProvider");
-    private static final String ATTRIBUTION_ID_COLUMN_NAME = "aid";
-
     private static final String ATTRIBUTION_PREFERENCES = "com.facebook.sdk.attributionTracking";
     private static final String PUBLISH_ACTIVITY_PATH = "%s/activities";
-    private static final String MOBILE_INSTALL_EVENT = "MOBILE_APP_INSTALL";
-    private static final String ANALYTICS_EVENT = "event";
 
     private static final BlockingQueue<Runnable> DEFAULT_WORK_QUEUE =
             new LinkedBlockingQueue<Runnable>(10);
@@ -101,7 +104,8 @@ public final class FacebookSdk {
     };
 
     static final String CALLBACK_OFFSET_CHANGED_AFTER_INIT =
-            "The callback request code offset can't be updated once the SDK is initialized.";
+            "The callback request code offset can't be updated once the SDK is initialized. " +
+            "Call FacebookSdk.setCallbackRequestCodeOffset inside your Application.onCreate method";
 
     static final String CALLBACK_OFFSET_NEGATIVE =
             "The callback request code offset can't be negative.";
@@ -122,56 +126,178 @@ public final class FacebookSdk {
      */
     public static final String CLIENT_TOKEN_PROPERTY = "com.facebook.sdk.ClientToken";
 
+    /**
+     * The key for the web dialog theme in the Android manifest.
+     */
+    public static final String WEB_DIALOG_THEME = "com.facebook.sdk.WebDialogTheme";
+
+    /**
+     * The key for the auto logging app events in the Android manifest.
+     */
+    public static final String AUTO_LOG_APP_EVENTS_ENABLED_PROPERTY =
+            "com.facebook.sdk.AutoLogAppEventsEnabled";
+
+    /**
+     * The key for the callback off set in the Android manifest.
+     */
+    public static final String CALLBACK_OFFSET_PROPERTY = "com.facebook.sdk.CallbackOffset";
+
     private static Boolean sdkInitialized = false;
 
     /**
-     * This function initializes the Facebook SDK, the behavior of Facebook SDK functions are
-     * undetermined if this function is not called. It should be called as early as possible.
+     * This function initializes the Facebook SDK. This function is called automatically on app
+     * start up if the proper entries are listed in the AndroidManifest, such as the facebook
+     * app id. This method can bee called manually if needed.
+     * The behavior of Facebook SDK functions are undetermined if this function is not called.
+     * It should be called as early as possible.
+     * As part of SDK initialization basic auto logging of app events will occur, this can be
+     * controlled via 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting
      * @param applicationContext The application context
      * @param callbackRequestCodeOffset The request code offset that Facebook activities will be
      *                                  called with. Please do not use the range between the
      *                                  value you set and another 100 entries after it in your
      *                                  other requests.
+     * @Deprecated {@link #sdkInitialize(Context)} and
+     * {@link AppEventsLogger#activateApp(Application)} are called automatically on application
+     * start. Automatic event logging from 'activateApp' can be controlled via the
+     * 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting. The callbackRequestCodeOffset
+     * can be set in the AndroidManifest as a meta data entry with the name
+     * {@link #CALLBACK_OFFSET_PROPERTY}.
      */
+    @Deprecated
+    @SuppressWarnings("deprecation")
     public static synchronized void sdkInitialize(
             Context applicationContext,
             int callbackRequestCodeOffset) {
+        sdkInitialize(applicationContext, callbackRequestCodeOffset, null);
+    }
+
+    /**
+     * This function initializes the Facebook SDK. This function is called automatically on app
+     * start up if the proper entries are listed in the AndroidManifest, such as the facebook
+     * app id. This method can bee called manually if needed.
+     * The behavior of Facebook SDK functions are undetermined if this function is not called.
+     * It should be called as early as possible.
+     * As part of SDK initialization basic auto logging of app events will occur, this can be
+     * controlled via 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting
+     * @param applicationContext The application context
+     * @param callbackRequestCodeOffset The request code offset that Facebook activities will be
+     *                                  called with. Please do not use the range between the
+     *                                  value you set and another 100 entries after it in your
+     *                                  other requests.
+     * @param callback A callback called when initialize finishes. This will be called even if the
+     *                 sdk is already initialized.
+     * @Deprecated {@link #sdkInitialize(Context)} and
+     * {@link AppEventsLogger#activateApp(Application)} are called automatically on application
+     * start. Automatic event logging from 'activateApp' can be controlled via the
+     * 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting. The callbackRequestCodeOffset
+     * can be set in the AndroidManifest as a meta data entry with the name
+     * {@link #CALLBACK_OFFSET_PROPERTY}.
+     */
+    @Deprecated
+    @SuppressWarnings("deprecation")
+    public static synchronized void sdkInitialize(
+            Context applicationContext,
+            int callbackRequestCodeOffset,
+            final InitializeCallback callback) {
         if (sdkInitialized && callbackRequestCodeOffset != FacebookSdk.callbackRequestCodeOffset) {
             throw new FacebookException(CALLBACK_OFFSET_CHANGED_AFTER_INIT);
         }
         if (callbackRequestCodeOffset < 0) {
             throw new FacebookException(CALLBACK_OFFSET_NEGATIVE);
         }
+
         FacebookSdk.callbackRequestCodeOffset = callbackRequestCodeOffset;
-        sdkInitialize(applicationContext);
+        sdkInitialize(applicationContext, callback);
     }
 
+    /**
+     * This function initializes the Facebook SDK. This function is called automatically on app
+     * start up if the proper entries are listed in the AndroidManifest, such as the facebook
+     * app id. This method can bee called manually if needed.
+     * The behavior of Facebook SDK functions are undetermined if this function is not called.
+     * It should be called as early as possible.
+     * As part of SDK initialization basic auto logging of app events will occur, this can be
+     * controlled via 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting
+     * @param applicationContext The application context
+     * @Deprecated {@link #sdkInitialize(Context)} and
+     * {@link AppEventsLogger#activateApp(Application)} are called automatically on application
+     * start. Automatic event logging from 'activateApp' can be controlled via the
+     * 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting.
+     */
+    @Deprecated
+    @SuppressWarnings("deprecation")
+    public static synchronized void sdkInitialize(Context applicationContext) {
+        FacebookSdk.sdkInitialize(applicationContext, null);
+    }
 
     /**
-     * This function initializes the Facebook SDK, the behavior of Facebook SDK functions are
-     * undetermined if this function is not called. It should be called as early as possible.
+     * This function initializes the Facebook SDK. This function is called automatically on app
+     * start up if the proper entries are listed in the AndroidManifest, such as the facebook
+     * app id. This method can bee called manually if needed.
+     * The behavior of Facebook SDK functions are undetermined if this function is not called.
+     * It should be called as early as possible.
+     * As part of SDK initialization basic auto logging of app events will occur, this can be
+     * controlled via 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting
      * @param applicationContext The application context
+     * @param callback A callback called when initialize finishes. This will be called even if the
+     *                 sdk is already initialized.
+     * @Deprecated {@link #sdkInitialize(Context)} and
+     * {@link AppEventsLogger#activateApp(Application)} are called automatically on application
+     * start. Automatic event logging from 'activateApp' can be controlled via the
+     * 'com.facebook.sdk.AutoLogAppEventsEnabled' manifest setting.
      */
-    public static synchronized void sdkInitialize(Context applicationContext) {
-        if (sdkInitialized == true) {
-          return;
+    @Deprecated
+    public static synchronized void sdkInitialize(
+            final Context applicationContext,
+            final InitializeCallback callback) {
+        if (sdkInitialized) {
+            if (callback != null) {
+                callback.onInitialized();
+            }
+            return;
         }
 
         Validate.notNull(applicationContext, "applicationContext");
+
+        // Don't throw for these validations here, just log an error. We'll throw when we actually
+        // need them
+        Validate.hasFacebookActivity(applicationContext, false);
+        Validate.hasInternetPermissions(applicationContext, false);
 
         FacebookSdk.applicationContext = applicationContext.getApplicationContext();
 
         // Make sure we've loaded default settings if we haven't already.
         FacebookSdk.loadDefaultsFromMetadata(FacebookSdk.applicationContext);
+
+        // We should have an application id by now if not throw
+        if (Utility.isNullOrEmpty(applicationId)) {
+            throw new FacebookException("A valid Facebook app id must be set in the " +
+                    "AndroidManifest.xml or set by calling FacebookSdk.setApplicationId " +
+                    "before initializing the sdk.");
+        }
+
+        // Set sdkInitialized to true now so the bellow async tasks don't throw not initialized
+        // exceptions.
+        sdkInitialized = true;
+
         // Load app settings from network so that dialog configs are available
-        Utility.loadAppSettingsAsync(FacebookSdk.applicationContext, applicationId);
+        FetchedAppSettingsManager.loadAppSettingsAsync();
+        // Fetch available protocol versions from the apps on the device
+        NativeProtocol.updateAllAvailableProtocolVersionsAsync();
 
         BoltsMeasurementEventListener.getInstance(FacebookSdk.applicationContext);
 
-        cacheDir = FacebookSdk.applicationContext.getCacheDir();
+        cacheDir = new LockOnGetVariable<File>(
+                new Callable<File>() {
+                    @Override
+                    public File call() throws Exception {
+                        return FacebookSdk.applicationContext.getCacheDir();
+                    }
+                });
 
-        FutureTask<Void> accessTokenLoadFutureTask =
-                new FutureTask<Void>(new Callable<Void>() {
+        FutureTask<Void> futureTask =
+                new FutureTask<>(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {
                         AccessTokenManager.getInstance().loadCurrentAccessToken();
@@ -182,12 +308,19 @@ public final class FacebookSdk {
                             // issue, retry
                             Profile.fetchProfileForCurrentAccessToken();
                         }
+
+                        if (callback != null) {
+                            callback.onInitialized();
+                        }
+
+                        // Flush any app events that might have been persisted during last run.
+                        AppEventsLogger.newLogger(
+                                applicationContext.getApplicationContext()).flush();
+
                         return null;
                     }
                 });
-        Executors.newSingleThreadExecutor().execute(accessTokenLoadFutureTask);
-
-        sdkInitialized = true;
+        getExecutor().execute(futureTask);
     }
 
     /**
@@ -321,13 +454,7 @@ public final class FacebookSdk {
     public static Executor getExecutor() {
         synchronized (LOCK) {
             if (FacebookSdk.executor == null) {
-                Executor executor = getAsyncTaskExecutor();
-                if (executor == null) {
-                    executor = new ThreadPoolExecutor(
-                            DEFAULT_CORE_POOL_SIZE, DEFAULT_MAXIMUM_POOL_SIZE, DEFAULT_KEEP_ALIVE,
-                            TimeUnit.SECONDS, DEFAULT_WORK_QUEUE, DEFAULT_THREAD_FACTORY);
-                }
-                FacebookSdk.executor = executor;
+                FacebookSdk.executor = AsyncTask.THREAD_POOL_EXECUTOR;
             }
         }
         return FacebookSdk.executor;
@@ -380,30 +507,27 @@ public final class FacebookSdk {
         return applicationContext;
     }
 
-    private static Executor getAsyncTaskExecutor() {
-        Field executorField = null;
-        try {
-            executorField = AsyncTask.class.getField("THREAD_POOL_EXECUTOR");
-        } catch (NoSuchFieldException e) {
-            return null;
+    /**
+     * Sets the Graph API version to use when making Graph requests. This defaults to the latest
+     * Graph API version at the time when the Facebook SDK is shipped.
+     *
+     * @param graphApiVersion the Graph API version, it should be of the form "v2.7"
+     */
+    public static void setGraphApiVersion(String graphApiVersion) {
+        if (!Utility.isNullOrEmpty(graphApiVersion) &&
+                !FacebookSdk.graphApiVersion.equals(graphApiVersion)) {
+            FacebookSdk.graphApiVersion = graphApiVersion;
         }
+    }
 
-        Object executorObject = null;
-        try {
-            executorObject = executorField.get(null);
-        } catch (IllegalAccessException e) {
-            return null;
-        }
-
-        if (executorObject == null) {
-            return null;
-        }
-
-        if (!(executorObject instanceof Executor)) {
-            return null;
-        }
-
-        return (Executor) executorObject;
+    /**
+     * Returns the Graph API version to use when making Graph requests. This defaults to the latest
+     * Graph API version at the time when the Facebook SDK is shipped.
+     *
+     * @return the Graph API version to use.
+     */
+    public static String getGraphApiVersion() {
+        return graphApiVersion;
     }
 
     /**
@@ -437,15 +561,14 @@ public final class FacebookSdk {
             long lastPing = preferences.getLong(pingKey, 0);
             String lastResponseJSON = preferences.getString(jsonKey, null);
 
-            JSONObject publishParams = new JSONObject();
+            JSONObject publishParams;
             try {
-                publishParams.put(ANALYTICS_EVENT, MOBILE_INSTALL_EVENT);
-
-                Utility.setAppEventAttributionParameters(publishParams,
+                publishParams = AppEventsLoggerUtility.getJSONObjectForGraphAPICall(
+                        AppEventsLoggerUtility.GraphAPIActivityType.MOBILE_INSTALL_EVENT,
                         identifiers,
                         AppEventsLogger.getAnonymousAppDeviceGUID(context),
-                        getLimitEventAndDataUsage(context));
-                publishParams.put("application_package_name", context.getPackageName());
+                        getLimitEventAndDataUsage(context),
+                        context);
             } catch (JSONException e) {
                 throw new FacebookException("An error occurred while publishing install.", e);
             }
@@ -498,38 +621,11 @@ public final class FacebookSdk {
     }
 
     /**
-     * Returns the current attribution id from the facebook app.
-     *
-     * @return null if the facebook app is not present on the phone.
-     */
-    public static String getAttributionId(ContentResolver contentResolver) {
-        Validate.sdkInitialized();
-        Cursor c = null;
-        try {
-            String [] projection = {ATTRIBUTION_ID_COLUMN_NAME};
-            c = contentResolver.query(ATTRIBUTION_ID_CONTENT_URI, projection, null, null, null);
-            if (c == null || !c.moveToFirst()) {
-                return null;
-            }
-            String attributionId = c.getString(c.getColumnIndex(ATTRIBUTION_ID_COLUMN_NAME));
-            return attributionId;
-        } catch (Exception e) {
-            Log.d(TAG, "Caught unexpected exception in getAttributionId(): " + e.toString());
-            return null;
-        } finally {
-            if (c != null) {
-                c.close();
-            }
-        }
-    }
-
-    /**
      * Returns the current version of the Facebook SDK for Android as a string.
      *
      * @return the current version of the SDK
      */
     public static String getSdkVersion() {
-        Validate.sdkInitialized();
         return FacebookSdkVersion.BUILD;
     }
 
@@ -601,13 +697,43 @@ public final class FacebookSdk {
         }
 
         if (applicationId == null) {
-            applicationId = ai.metaData.getString(APPLICATION_ID_PROPERTY);
+            Object appId = ai.metaData.get(APPLICATION_ID_PROPERTY);
+            if (appId instanceof String) {
+                String appIdString = (String) appId;
+                if (appIdString.toLowerCase(Locale.ROOT).startsWith("fb")) {
+                    applicationId = appIdString.substring(2);
+                } else {
+                    applicationId = appIdString;
+                }
+            } else if (appId instanceof Integer) {
+                throw new FacebookException(
+                        "App Ids cannot be directly placed in the manifest." +
+                        "They must be prefixed by 'fb' or be placed in the string resource file.");
+            }
         }
+
         if (applicationName == null) {
             applicationName = ai.metaData.getString(APPLICATION_NAME_PROPERTY);
         }
+
         if (appClientToken == null) {
             appClientToken = ai.metaData.getString(CLIENT_TOKEN_PROPERTY);
+        }
+
+        if (webDialogTheme == 0) {
+            setWebDialogTheme(ai.metaData.getInt(WEB_DIALOG_THEME));
+        }
+
+        if (callbackRequestCodeOffset == DEFAULT_CALLBACK_REQUEST_CODE_OFFSET) {
+            callbackRequestCodeOffset = ai.metaData.getInt(
+                    CALLBACK_OFFSET_PROPERTY,
+                    DEFAULT_CALLBACK_REQUEST_CODE_OFFSET);
+        }
+
+        if (autoLogAppEventsEnabled == null) {
+            autoLogAppEventsEnabled = ai.metaData.getBoolean(
+                AUTO_LOG_APP_EVENTS_ENABLED_PROPERTY,
+                true);
         }
     }
 
@@ -707,6 +833,41 @@ public final class FacebookSdk {
     }
 
     /**
+     * Gets the theme used by {@link com.facebook.internal.WebDialog}
+     * @return the theme
+     */
+    public static int getWebDialogTheme() {
+        Validate.sdkInitialized();
+        return webDialogTheme;
+    }
+
+    /**
+     * Sets the theme used by {@link com.facebook.internal.WebDialog}
+     * @param theme A theme to use
+     */
+    public static void setWebDialogTheme(int theme) {
+        webDialogTheme = (theme != 0) ? theme : DEFAULT_THEME;
+    }
+
+    /**
+     * Gets the flag used by {@link com.facebook.appevents.AppEventsLogger}
+     * @return the auto logging events flag for the application
+     */
+    public static boolean getAutoLogAppEventsEnabled() {
+        Validate.sdkInitialized();
+        return autoLogAppEventsEnabled;
+    }
+
+    /**
+     * Sets the auto logging events flag for the application
+     * {@link com.facebook.appevents.AppEventsLogger}
+     * @param flag true or false
+     */
+    public static void setAutoLogAppEventsEnabled(boolean flag) {
+        autoLogAppEventsEnabled = flag;
+    }
+
+    /**
      * Gets the cache directory to use for caching responses, etc. The default will be the value
      * returned by Context.getCacheDir() when the SDK was initialized, but it can be overridden.
      *
@@ -714,7 +875,7 @@ public final class FacebookSdk {
      */
     public static File getCacheDir() {
         Validate.sdkInitialized();
-        return cacheDir;
+        return cacheDir.getValue();
     }
 
     /**
@@ -722,7 +883,7 @@ public final class FacebookSdk {
      * @param cacheDir the cache directory
      */
     public static void setCacheDir(File cacheDir) {
-        FacebookSdk.cacheDir = cacheDir;
+        FacebookSdk.cacheDir = new LockOnGetVariable<File>(cacheDir);
     }
 
     /**
@@ -748,5 +909,15 @@ public final class FacebookSdk {
     public static boolean isFacebookRequestCode(int requestCode) {
         return requestCode >= callbackRequestCodeOffset
                 && requestCode < callbackRequestCodeOffset + MAX_REQUEST_CODE_RANGE;
+    }
+
+    /**
+     * Callback passed to the sdkInitialize function.
+     */
+    public interface InitializeCallback {
+        /**
+         * Called when the sdk has been initialized.
+         */
+        void onInitialized();
     }
 }

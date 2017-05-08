@@ -33,15 +33,17 @@ import android.support.annotation.Nullable;
  */
 public final class ShareLinkContent
         extends ShareContent<ShareLinkContent, ShareLinkContent.Builder> {
-    private final String contentDescription;
-    private final String contentTitle;
-    private final Uri imageUrl;
+    @Deprecated private final String contentDescription;
+    @Deprecated private final String contentTitle;
+    @Deprecated private final Uri imageUrl;
+    private final String quote;
 
     private ShareLinkContent(final Builder builder) {
         super(builder);
         this.contentDescription = builder.contentDescription;
         this.contentTitle = builder.contentTitle;
         this.imageUrl = builder.imageUrl;
+        this.quote = builder.quote;
     }
 
     ShareLinkContent(final Parcel in) {
@@ -49,33 +51,52 @@ public final class ShareLinkContent
         this.contentDescription = in.readString();
         this.contentTitle = in.readString();
         this.imageUrl = in.readParcelable(Uri.class.getClassLoader());
+        this.quote = in.readString();
     }
 
     /**
+     * @deprecated As of Graph API 2.9 this field is deprecated and may not function as expected.
+     * For more information, see https://developers.facebook.com/docs/apps/changelog#v2_9_deprecations.
      * The description of the link.  If not specified, this field is automatically populated by
      * information scraped from the link, typically the title of the page.
      * @return The description of the link.
      */
+    @Deprecated
     public String getContentDescription() {
         return this.contentDescription;
     }
 
     /**
+     * @deprecated As of Graph API 2.9 this field is deprecated and may not function as expected.
+     * For more information, see https://developers.facebook.com/docs/apps/changelog#v2_9_deprecations.
      * The title to display for this link.
      * @return The link title.
      */
+    @Deprecated
     @Nullable
     public String getContentTitle() {
         return this.contentTitle;
     }
 
     /**
+     * @deprecated As of Graph API 2.9 this field is deprecated and may not function as expected.
+     * For more information, see https://developers.facebook.com/docs/apps/changelog#v2_9_deprecations.
      * The URL of a picture to attach to this content.
      * @return The network URL of an image.
      */
+    @Deprecated
     @Nullable
     public Uri getImageUrl() {
         return this.imageUrl;
+    }
+
+    /**
+     * The quoted text to display for this link.
+     * @return The text quoted from the link.
+     */
+    @Nullable
+    public String getQuote() {
+        return this.quote;
     }
 
     public int describeContents() {
@@ -87,6 +108,7 @@ public final class ShareLinkContent
         out.writeString(this.contentDescription);
         out.writeString(this.contentTitle);
         out.writeParcelable(this.imageUrl, 0);
+        out.writeString(this.quote);
     }
 
     @SuppressWarnings("unused")
@@ -106,15 +128,20 @@ public final class ShareLinkContent
      */
     public static final class Builder
             extends ShareContent.Builder<ShareLinkContent, Builder> {
-        private String contentDescription;
-        private String contentTitle;
-        private Uri imageUrl;
+        @Deprecated private String contentDescription;
+        @Deprecated private String contentTitle;
+        @Deprecated private Uri imageUrl;
+
+        private String quote;
 
         /**
+         * @deprecated As of Graph API 2.9 this field is deprecated and may not function as expected.
          * Set the contentDescription of the link.
+         * For more information, see https://developers.facebook.com/docs/apps/changelog#v2_9_deprecations.
          * @param contentDescription The contentDescription of the link.
          * @return The builder.
          */
+        @Deprecated
         public Builder setContentDescription(
                 @Nullable final String contentDescription) {
             this.contentDescription = contentDescription;
@@ -122,22 +149,38 @@ public final class ShareLinkContent
         }
 
         /**
+         * @deprecated As of Graph API 2.9 this field is deprecated and may not function as expected.
+         * For more information, see https://developers.facebook.com/docs/apps/changelog#v2_9_deprecations.
          * Set the contentTitle to display for this link.
          * @param contentTitle The link contentTitle.
          * @return The builder.
          */
+        @Deprecated
         public Builder setContentTitle(@Nullable final String contentTitle) {
             this.contentTitle = contentTitle;
             return this;
         }
 
         /**
+         * @deprecated As of Graph API 2.9 this field is deprecated and may not function as expected.
+         * For more information, see https://developers.facebook.com/docs/apps/changelog#v2_9_deprecations.
          * Set the URL of a picture to attach to this content.
          * @param imageUrl The network URL of an image.
          * @return The builder.
          */
+        @Deprecated
         public Builder setImageUrl(@Nullable final Uri imageUrl) {
             this.imageUrl = imageUrl;
+            return this;
+        }
+
+        /**
+         * Set the quote to display for this link.
+         * @param quote The text quoted from the link.
+         * @return The builder.
+         */
+        public Builder setQuote(@Nullable final String quote) {
+            this.quote = quote;
             return this;
         }
 
@@ -156,15 +199,8 @@ public final class ShareLinkContent
                     .setContentDescription(model.getContentDescription())
                     .setImageUrl(model.getImageUrl())
                     .setContentTitle(model.getContentTitle())
+                    .setQuote(model.getQuote())
                     ;
         }
-
-        @Override
-        public Builder readFrom(final Parcel parcel) {
-            return this.readFrom(
-                    (ShareLinkContent) parcel.readParcelable(
-                            ShareLinkContent.class.getClassLoader()));
-        }
-
     }
 }

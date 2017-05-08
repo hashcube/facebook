@@ -30,6 +30,7 @@ import com.facebook.internal.AppCall;
 import com.facebook.internal.CallbackManagerImpl;
 import com.facebook.internal.DialogFeature;
 import com.facebook.internal.DialogPresenter;
+import com.facebook.internal.FragmentWrapper;
 import com.facebook.share.Sharer;
 import com.facebook.share.internal.LegacyNativeDialogParameters;
 import com.facebook.share.internal.MessageDialogFeature;
@@ -71,13 +72,32 @@ public final class MessageDialog
      * Helper to show the provided {@link com.facebook.share.model.ShareContent} using the provided
      * Fragment. No callback will be invoked.
      *
-     * @param fragment Fragment to use to send the provided content
+     * @param fragment android.support.v4.app.Fragment to use to send the provided content
      * @param shareContent Content to send
      */
     public static void show(
             final Fragment fragment,
             final ShareContent shareContent) {
-        new MessageDialog(fragment).show(shareContent);
+        show(new FragmentWrapper(fragment), shareContent);
+    }
+
+    /**
+     * Helper to show the provided {@link com.facebook.share.model.ShareContent} using the provided
+     * Fragment. No callback will be invoked.
+     *
+     * @param fragment android.app.Fragment to use to send the provided content
+     * @param shareContent Content to send
+     */
+    public static void show(
+            final android.app.Fragment fragment,
+            final ShareContent shareContent) {
+        show(new FragmentWrapper(fragment), shareContent);
+    }
+
+    private static void show(
+            final FragmentWrapper fragmentWrapper,
+            final ShareContent shareContent) {
+        new MessageDialog(fragmentWrapper).show(shareContent);
     }
 
     /**
@@ -106,10 +126,23 @@ public final class MessageDialog
 
     /**
      * Constructs a MessageDialog.
-     * @param fragment Fragment to use to send the provided content.
+     * @param fragment android.support.v4.app.Fragment to use to send the provided content.
      */
     public MessageDialog(Fragment fragment) {
-        super(fragment, DEFAULT_REQUEST_CODE);
+        this(new FragmentWrapper(fragment));
+
+    }
+
+    /**
+     * Constructs a MessageDialog.
+     * @param fragment android.app.Fragment to use to send the provided content.
+     */
+    public MessageDialog(android.app.Fragment fragment) {
+        this(new FragmentWrapper(fragment));
+    }
+
+    private MessageDialog(FragmentWrapper fragmentWrapper) {
+        super(fragmentWrapper, DEFAULT_REQUEST_CODE);
 
         ShareInternalUtility.registerStaticShareCallback(DEFAULT_REQUEST_CODE);
     }
@@ -123,7 +156,16 @@ public final class MessageDialog
 
     // for SendButton use only
     MessageDialog(Fragment fragment, int requestCode) {
-        super(fragment, requestCode);
+        this(new FragmentWrapper(fragment), requestCode);
+
+    }
+
+    MessageDialog(android.app.Fragment fragment, int requestCode) {
+        this(new FragmentWrapper(fragment), requestCode);
+    }
+
+    private MessageDialog(FragmentWrapper fragmentWrapper, int requestCode) {
+        super(fragmentWrapper, requestCode);
 
         ShareInternalUtility.registerStaticShareCallback(requestCode);
     }
@@ -160,7 +202,7 @@ public final class MessageDialog
 
     private class NativeHandler extends ModeHandler {
         @Override
-        public boolean canShow(final ShareContent shareContent) {
+        public boolean canShow(final ShareContent shareContent, boolean isBestEffort) {
             return shareContent != null && MessageDialog.canShow(shareContent.getClass());
         }
 
@@ -170,7 +212,6 @@ public final class MessageDialog
 
             final AppCall appCall = createBaseAppCall();
             final boolean shouldFailOnDataError = getShouldFailOnDataError();
-            final Activity activity = getActivityContext();
 
             DialogPresenter.setupAppCallForNativeDialog(
                     appCall,

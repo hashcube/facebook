@@ -20,18 +20,17 @@
 
 package com.facebook.share.internal;
 
-import android.content.Context;
 import android.os.Bundle;
 
 import com.facebook.FacebookException;
 import com.facebook.internal.Utility;
 import com.facebook.internal.Validate;
 import com.facebook.share.model.ShareContent;
+import com.facebook.share.model.ShareHashtag;
 import com.facebook.share.model.ShareLinkContent;
-import com.facebook.share.model.ShareOpenGraphAction;
+import com.facebook.share.model.ShareMediaContent;
 import com.facebook.share.model.ShareOpenGraphContent;
 import com.facebook.share.model.SharePhotoContent;
-import com.facebook.share.model.ShareVideo;
 import com.facebook.share.model.ShareVideoContent;
 
 import org.json.JSONException;
@@ -68,13 +67,14 @@ public class NativeDialogParameters {
             nativeParams = create(photoContent, photoUrls, shouldFailOnDataError);
         } else if (shareContent instanceof ShareVideoContent) {
             final ShareVideoContent videoContent = (ShareVideoContent) shareContent;
-            nativeParams = create(videoContent, shouldFailOnDataError);
+            String videoUrl = ShareInternalUtility.getVideoUrl(videoContent, callId);
+
+            nativeParams = create(videoContent, videoUrl, shouldFailOnDataError);
         } else if (shareContent instanceof ShareOpenGraphContent) {
             final ShareOpenGraphContent openGraphContent = (ShareOpenGraphContent) shareContent;
-            final ShareOpenGraphAction action = openGraphContent.getAction();
             try {
                 JSONObject openGraphActionJSON = ShareInternalUtility.toJSONObjectForCall(
-                        callId, action);
+                        callId, openGraphContent);
                 openGraphActionJSON = ShareInternalUtility.removeNamespacesFromOGJsonObject(
                         openGraphActionJSON, false);
                 nativeParams = create(openGraphContent, openGraphActionJSON, shouldFailOnDataError);
@@ -83,6 +83,13 @@ public class NativeDialogParameters {
                         "Unable to create a JSON Object from the provided ShareOpenGraphContent: "
                                 + e.getMessage());
             }
+        } else if (shareContent instanceof ShareMediaContent) {
+            final ShareMediaContent mediaContent = (ShareMediaContent) shareContent;
+            List<Bundle> mediaInfos = ShareInternalUtility.getMediaInfos(
+                    mediaContent,
+                    callId);
+
+            nativeParams = create(mediaContent, mediaInfos, shouldFailOnDataError);
         }
 
         return nativeParams;
@@ -95,6 +102,7 @@ public class NativeDialogParameters {
         Utility.putNonEmptyString(
                 params, ShareConstants.DESCRIPTION, linkContent.getContentDescription());
         Utility.putUri(params, ShareConstants.IMAGE_URL, linkContent.getImageUrl());
+        Utility.putNonEmptyString(params, ShareConstants.QUOTE, linkContent.getQuote());
 
         return params;
     }
@@ -110,14 +118,27 @@ public class NativeDialogParameters {
         return params;
     }
 
-    private static Bundle create(ShareVideoContent videoContent, boolean dataErrorsFatal) {
-        ShareVideo video = videoContent.getVideo();
+    private static Bundle create(
+            ShareVideoContent videoContent,
+            String videoUrl,
+            boolean dataErrorsFatal) {
         Bundle params = createBaseParameters(videoContent, dataErrorsFatal);
 
         Utility.putNonEmptyString(params, ShareConstants.TITLE, videoContent.getContentTitle());
         Utility.putNonEmptyString(
                 params, ShareConstants.DESCRIPTION, videoContent.getContentDescription());
-        Utility.putUri(params, ShareConstants.VIDEO_URL, video.getLocalUrl());
+        Utility.putNonEmptyString(params, ShareConstants.VIDEO_URL, videoUrl);
+
+        return params;
+    }
+
+    private static Bundle create(
+            ShareMediaContent mediaContent,
+            List<Bundle> mediaInfos,
+            boolean dataErrorsFatal) {
+        Bundle params = createBaseParameters(mediaContent, dataErrorsFatal);
+
+        params.putParcelableArrayList(ShareConstants.MEDIA, new ArrayList<>(mediaInfos));
 
         return params;
     }
@@ -162,7 +183,12 @@ public class NativeDialogParameters {
         if (!Utility.isNullOrEmpty(peopleIds)) {
             params.putStringArrayList(
                     ShareConstants.PEOPLE_IDS,
-                    new ArrayList<String>(peopleIds));
+                    new ArrayList<>(peopleIds));
+        }
+
+        ShareHashtag shareHashtag = content.getShareHashtag();
+        if (shareHashtag != null) {
+            Utility.putNonEmptyString(params, ShareConstants.HASHTAG, shareHashtag.getHashtag());
         }
 
         return params;
