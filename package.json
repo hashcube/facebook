@@ -1,6 +1,6 @@
 {
   "name": "facebook",
-  "version": "3.3.9",
+  "version": "3.3.10",
   "devkit": {
     "clientPaths": {
       "facebook": "js"

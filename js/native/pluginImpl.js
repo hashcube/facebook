@@ -266,6 +266,30 @@ function createNativeFacebookWrapper () {
     AppEvents: {
 
       /**
+       * @method setUserId
+       *
+       * @param {string} userId
+       */
+
+      setUserId: function FBNativeSetUserId () {
+        nativeFB.notify('setUserId', {
+          uid:  arguments[0]
+        });
+      },
+
+      /**
+       * @method updateUserProperties
+       *
+       * @param {object} [userProperties]
+       */
+
+      updateUserProperties: function FBNativeUpdateUserProperties () {
+        nativeFB.notify('updateUserProperties', {
+          props:  arguments[0]
+        });
+      },
+
+      /**
        * @method logEvent
        *
        * @param {string} eventName

@@ -628,6 +628,63 @@ public class FacebookPlugin implements IPlugin {
     aeLogger.logPurchase(BigDecimal.valueOf(purchaseAmount), Currency.getInstance(currency), parameters);
   }
 
+  public void setUserId (String jsonData) {
+    logger.log("{facebook} setUserId");
+
+    JSONObject json = null;
+    String userId = "";
+
+    try {
+      json = new JSONObject(jsonData);
+      userId = json.getString("uid");
+    } catch(JSONException e) {
+      log("setUserId failed to parse JSON blob");
+      onJSONException(e);
+      return;
+    }
+
+    aeLogger.setUserID(userId);
+  };
+
+  public void updateUserProperties (String jsonData) {
+    logger.log("{facebook} updateUserProperties");
+
+    JSONObject json = null;
+    Bundle parameters = new Bundle();
+
+    try {
+      json = new JSONObject(jsonData);
+      json = json.getJSONObject("props");
+      Iterator<String> iter = json.keys();
+      while (iter.hasNext()) {
+        String key = iter.next();
+        try {
+          parameters.putString(key, json.getString(key));
+        } catch(JSONException e) {
+          logger.log("{facebook} updateUserProperties failed for " + key);
+        }
+      }
+    } catch(JSONException e) {
+      log("updateUserProperties failed to parse JSON blob");
+      onJSONException(e);
+      return;
+    }
+
+    if (parameters.size() > 0) {
+      logger.log("{facebook} updating user properties");
+      aeLogger.updateUserProperties(parameters,  new GraphRequest.Callback() {
+        @Override
+        public void onCompleted(GraphResponse res) {
+          if (res.getError() != null) {
+            logger.log("{facebook} updateUserProperties error");
+          } else {
+            logger.log("{facebook} updateUserProperties success");
+          }
+        }
+      });
+    }
+  };
+
   // ---------------------------------------------------------------------------
   // Facebook Interface Utilities
   // ---------------------------------------------------------------------------
