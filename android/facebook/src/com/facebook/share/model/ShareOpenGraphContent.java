@@ -144,5 +144,12 @@ public final class ShareOpenGraphContent
                     ;
         }
 
+        @Override
+        public Builder readFrom(final Parcel parcel) {
+            return this.readFrom(
+                    (com.facebook.share.model.ShareOpenGraphContent) parcel.readParcelable(
+                            ShareOpenGraphContent.class.getClassLoader()));
+        }
+
     }
 }

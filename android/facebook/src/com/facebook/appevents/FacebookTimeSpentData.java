@@ -24,7 +24,6 @@ import android.os.Bundle;
 import android.text.format.DateUtils;
 
 import com.facebook.LoggingBehavior;
-import com.facebook.appevents.AppEventsConstants;
 import com.facebook.internal.Logger;
 
 import java.util.Locale;
@@ -33,7 +32,7 @@ import java.io.Serializable;
 class FacebookTimeSpentData implements Serializable {
     // Constants
     private static final long serialVersionUID = 1L;
-    private static final String TAG = FacebookTimeSpentData.class.getCanonicalName();
+    private static final String TAG = AppEventsLogger.class.getCanonicalName();
     private static final long FIRST_TIME_LOAD_RESUME_TIME = -1;
     private static final long INTERRUPTION_THRESHOLD_MILLISECONDS = 1000;
     private static final long NUM_MILLISECONDS_IDLE_TO_BE_NEW_SESSION =
@@ -233,9 +232,6 @@ class FacebookTimeSpentData implements Serializable {
                     sourceApplicationInfo);
             logger.logEvent(AppEventsConstants.EVENT_NAME_ACTIVATED_APP, eventParams);
             lastActivateEventLoggedTime = now;
-            if (logger.getFlushBehavior() != AppEventsLogger.FlushBehavior.EXPLICIT_ONLY) {
-              logger.flush();
-            }
         }
 
         // If this is an application that's not calling onSuspend yet, log and return. We can't

@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 
 import com.facebook.FacebookActivity;
 import com.facebook.FacebookException;
@@ -40,8 +41,10 @@ public class DialogPresenter {
 
     public static void setupAppCallForCannotShowError(AppCall appCall) {
         FacebookException e = new FacebookException(
-                "Unable to show the provided content via the web or the installed version of the " +
-                        "Facebook app. Some dialogs are only supported starting API 14.");
+                "Unable to show the provided content. This typically means that the Facebook " +
+                        "app is not installed or up to date. If showing via the Web, this could " +
+                        "mean that the content has properties that are not supported via " +
+                        "this channel");
         setupAppCallForValidationError(appCall, e);
     }
 
@@ -61,17 +64,15 @@ public class DialogPresenter {
         appCall.setPending();
     }
 
-    public static void present(AppCall appCall, FragmentWrapper fragmentWrapper) {
-        fragmentWrapper.startActivityForResult(
-                appCall.getRequestIntent(),
-                appCall.getRequestCode());
+    public static void present(AppCall appCall, Fragment fragment) {
+        fragment.startActivityForResult(appCall.getRequestIntent(), appCall.getRequestCode());
 
         appCall.setPending();
     }
 
     public static boolean canPresentNativeDialogWithFeature(
             DialogFeature feature) {
-        return getProtocolVersionForNativeDialog(feature).getProtocolVersion()
+        return getProtocolVersionForNativeDialog(feature)
                 != NativeProtocol.NO_PROTOCOL_AVAILABLE;
     }
 
@@ -83,7 +84,6 @@ public class DialogPresenter {
         if (exception == null) {
             return;
         }
-        Validate.hasFacebookActivity(FacebookSdk.getApplicationContext());
 
         Intent errorResultIntent = new Intent();
         errorResultIntent.setClass(FacebookSdk.getApplicationContext(), FacebookActivity.class);
@@ -103,9 +103,6 @@ public class DialogPresenter {
             AppCall appCall,
             String actionName,
             Bundle parameters) {
-        Validate.hasFacebookActivity(FacebookSdk.getApplicationContext());
-        Validate.hasInternetPermissions(FacebookSdk.getApplicationContext());
-
         Bundle intentParameters = new Bundle();
         intentParameters.putString(NativeProtocol.WEB_DIALOG_ACTION, actionName);
         intentParameters.putBundle(NativeProtocol.WEB_DIALOG_PARAMS, parameters);
@@ -127,9 +124,6 @@ public class DialogPresenter {
             AppCall appCall,
             Bundle parameters,
             DialogFeature feature) {
-        Validate.hasFacebookActivity(FacebookSdk.getApplicationContext());
-        Validate.hasInternetPermissions(FacebookSdk.getApplicationContext());
-
         String featureName = feature.name();
         Uri fallbackUrl = getDialogWebFallbackUri(feature);
         if (fallbackUrl == null) {
@@ -184,9 +178,7 @@ public class DialogPresenter {
             DialogFeature feature) {
         Context context = FacebookSdk.getApplicationContext();
         String action = feature.getAction();
-        NativeProtocol.ProtocolVersionQueryResult protocolVersionResult =
-                getProtocolVersionForNativeDialog(feature);
-        int protocolVersion = protocolVersionResult.getProtocolVersion();
+        int protocolVersion = getProtocolVersionForNativeDialog(feature);
         if (protocolVersion == NativeProtocol.NO_PROTOCOL_AVAILABLE) {
             throw new FacebookException(
                     "Cannot present this dialog. This likely means that the " +
@@ -209,7 +201,7 @@ public class DialogPresenter {
                 context,
                 appCall.getCallId().toString(),
                 action,
-                protocolVersionResult,
+                protocolVersion,
                 params);
         if (intent == null) {
             throw new FacebookException(
@@ -225,8 +217,8 @@ public class DialogPresenter {
         String action = feature.getAction();
         String applicationId = FacebookSdk.getApplicationId();
 
-        FetchedAppSettings.DialogFeatureConfig config =
-                FetchedAppSettings.getDialogFeatureConfig(applicationId, action, featureName);
+        Utility.DialogFeatureConfig config =
+                Utility.getDialogFeatureConfig(applicationId, action, featureName);
         Uri fallbackUrl = null;
         if (config != null) {
             fallbackUrl = config.getFallbackUrl();
@@ -235,7 +227,7 @@ public class DialogPresenter {
         return fallbackUrl;
     }
 
-    public static NativeProtocol.ProtocolVersionQueryResult getProtocolVersionForNativeDialog(
+    public static int getProtocolVersionForNativeDialog(
             DialogFeature feature) {
         String applicationId = FacebookSdk.getApplicationId();
         String action = feature.getAction();
@@ -252,8 +244,8 @@ public class DialogPresenter {
             DialogFeature feature) {
         // Return the value from DialogFeatureConfig if available. Otherwise, just
         // default to the min-version
-        FetchedAppSettings.DialogFeatureConfig config =
-                FetchedAppSettings.getDialogFeatureConfig(applicationId, actionName, feature.name());
+        Utility.DialogFeatureConfig config =
+                Utility.getDialogFeatureConfig(applicationId, actionName, feature.name());
         if (config != null) {
             return config.getVersionSpec();
         } else {

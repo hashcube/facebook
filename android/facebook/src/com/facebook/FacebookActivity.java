@@ -26,13 +26,10 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
-import android.util.Log;
 
 import com.facebook.internal.FacebookDialogFragment;
 import com.facebook.internal.NativeProtocol;
 import com.facebook.login.LoginFragment;
-import com.facebook.share.internal.DeviceShareDialogFragment;
-import com.facebook.share.model.ShareContent;
 
 /**
  * This Activity is a necessary part of the overall Facebook SDK,
@@ -52,39 +49,20 @@ public class FacebookActivity extends FragmentActivity {
 
     public static String PASS_THROUGH_CANCEL_ACTION = "PassThrough";
     private static String FRAGMENT_TAG = "SingleFragment";
-    private static final String TAG = FacebookActivity.class.getName();
 
     private Fragment singleFragment;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent intent = getIntent();
-
-        // Some apps using this sdk don't put the sdk initialize code in the application
-        // on create method. This can cause issues when opening this activity after an application
-        // has been killed since the sdk won't be initialized. Attempt to initialize the sdk
-        // here if it hasn't already been initialized.
-        if (!FacebookSdk.isInitialized()) {
-            Log.d(
-                TAG,
-                "Facebook SDK not initialized. Make sure you call sdkInitialize inside " +
-                        "your Application's onCreate method.");
-            FacebookSdk.sdkInitialize(getApplicationContext());
-        }
-
         setContentView(R.layout.com_facebook_activity_layout);
 
+        Intent intent = getIntent();
         if (PASS_THROUGH_CANCEL_ACTION.equals(intent.getAction())) {
             handlePassThroughError();
             return;
         }
 
-        singleFragment = getFragment();
-    }
-
-    protected Fragment getFragment() {
-        Intent intent = getIntent();
         FragmentManager manager = getSupportFragmentManager();
         Fragment fragment = manager.findFragmentByTag(FRAGMENT_TAG);
 
@@ -95,12 +73,6 @@ public class FacebookActivity extends FragmentActivity {
                 dialogFragment.show(manager, FRAGMENT_TAG);
 
                 fragment = dialogFragment;
-            } else if (DeviceShareDialogFragment.TAG.equals(intent.getAction())) {
-                DeviceShareDialogFragment dialogFragment = new DeviceShareDialogFragment();
-                dialogFragment.setRetainInstance(true);
-                dialogFragment.setShareContent((ShareContent) intent.getParcelableExtra("content"));
-                dialogFragment.show(manager, FRAGMENT_TAG);
-                fragment = dialogFragment;
             } else {
                 fragment = new LoginFragment();
                 fragment.setRetainInstance(true);
@@ -109,7 +81,8 @@ public class FacebookActivity extends FragmentActivity {
                         .commit();
             }
         }
-        return fragment;
+
+        singleFragment = fragment;
     }
 
     @Override
@@ -121,10 +94,6 @@ public class FacebookActivity extends FragmentActivity {
         }
     }
 
-    public Fragment getCurrentFragment() {
-        return singleFragment;
-    }
-
     private void handlePassThroughError() {
         Intent requestIntent = getIntent();
 
@@ -132,10 +101,12 @@ public class FacebookActivity extends FragmentActivity {
         Bundle errorResults = NativeProtocol.getMethodArgumentsFromIntent(requestIntent);
         FacebookException exception = NativeProtocol.getExceptionFromErrorData(errorResults);
 
+        // Create a result intent that is formed based on the request intent
         Intent resultIntent = NativeProtocol.createProtocolResultIntent(
-                getIntent(),
+                requestIntent,
                 null,
                 exception);
+
         setResult(RESULT_CANCELED, resultIntent);
         finish();
     }

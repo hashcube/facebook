@@ -17,8 +17,6 @@ node_modules
 
 android/facebook/gen
 android/facebook/bin
-android/cardview-v7/gen
-android/cardview-v7/bin
 
 local.properties
 

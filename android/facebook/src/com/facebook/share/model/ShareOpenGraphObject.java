@@ -70,7 +70,8 @@ public final class ShareOpenGraphObject extends
             return new ShareOpenGraphObject(this);
         }
 
-        Builder readFrom(final Parcel parcel) {
+        @Override
+        public Builder readFrom(final Parcel parcel) {
             return this.readFrom(
                     (ShareOpenGraphObject)parcel.readParcelable(
                             ShareOpenGraphObject.class.getClassLoader()));

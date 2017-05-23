@@ -28,15 +28,17 @@ import android.support.v4.app.Fragment;
 import com.facebook.FacebookCallback;
 import com.facebook.internal.FacebookDialogBase;
 import com.facebook.internal.AppCall;
+import com.facebook.internal.BundleJSONConverter;
 import com.facebook.internal.CallbackManagerImpl;
 import com.facebook.internal.DialogPresenter;
-import com.facebook.internal.FragmentWrapper;
 import com.facebook.share.internal.GameRequestValidation;
 import com.facebook.share.internal.ResultProcessor;
 import com.facebook.share.internal.ShareConstants;
 import com.facebook.share.internal.ShareInternalUtility;
 import com.facebook.share.internal.WebDialogParameters;
 import com.facebook.share.model.GameRequestContent;
+import org.json.JSONObject;
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,15 +55,14 @@ public class GameRequestDialog
      */
     public static final class Result {
         String requestId;
-        List<String> to;
+        JSONObject data = null;
 
-        private Result(Bundle results) {
-            this.requestId = results.getString(ShareConstants.WEB_DIALOG_RESULT_PARAM_REQUEST_ID);
-            this.to = new ArrayList<String>();
-            while (results.containsKey(String.format(
-                    ShareConstants.WEB_DIALOG_RESULT_PARAM_TO_ARRAY_MEMBER, this.to.size()))) {
-                this.to.add(results.getString(String.format(
-                        ShareConstants.WEB_DIALOG_RESULT_PARAM_TO_ARRAY_MEMBER, this.to.size())));
+        private Result(JSONObject data) {
+            this.data = data;
+            try {
+              this.requestId = data.getString(ShareConstants.WEB_DIALOG_RESULT_PARAM_REQUEST_ID);
+            } catch  (JSONException e) {
+              this.requestId = "";
             }
         }
 
@@ -74,11 +75,11 @@ public class GameRequestDialog
         }
 
         /**
-         * Returns request recipients.
-         * @return request recipients
+         * Returns the request data.
+         * @return the request data.
          */
-        public List<String> getRequestRecipients() {
-            return to;
+        public JSONObject getRequestData() {
+            return data;
         }
     }
 
@@ -113,32 +114,11 @@ public class GameRequestDialog
      * Shows a {@link GameRequestDialog} to send a request, using
      * the passed in activity. No callback will be invoked.
      *
-     * @param fragment android.support.v4.app.Fragment hosting the dialog.
+     * @param fragment Fragment hosting the dialog.
      * @param gameRequestContent Content of the request.
      */
-    public static void show(
-            final Fragment fragment,
-            final GameRequestContent gameRequestContent) {
-        show(new FragmentWrapper(fragment), gameRequestContent);
-    }
-
-    /**
-     * Shows a {@link GameRequestDialog} to send a request, using
-     * the passed in activity. No callback will be invoked.
-     *
-     * @param fragment android.app.Fragment hosting the dialog.
-     * @param gameRequestContent Content of the request.
-     */
-    public static void show(
-            final android.app.Fragment fragment,
-            final GameRequestContent gameRequestContent) {
-        show(new FragmentWrapper(fragment), gameRequestContent);
-    }
-
-    private static void show(
-            final FragmentWrapper fragmentWrapper,
-            final GameRequestContent gameRequestContent) {
-        new GameRequestDialog(fragmentWrapper).show(gameRequestContent);
+    public static void show(final Fragment fragment, final GameRequestContent gameRequestContent) {
+        new GameRequestDialog(fragment).show(gameRequestContent);
     }
 
     /**
@@ -151,22 +131,10 @@ public class GameRequestDialog
 
     /**
      * Constructs a new RequestDialog.
-     * @param fragment android.support.v4.app.Fragment hosting the dialog.
+     * @param fragment Fragment hosting the dialog.
      */
     public GameRequestDialog(Fragment fragment) {
-        this(new FragmentWrapper(fragment));
-    }
-
-    /**
-     * Constructs a new RequestDialog.
-     * @param fragment android.app.Fragment hosting the dialog.
-     */
-    public GameRequestDialog(android.app.Fragment fragment) {
-        this(new FragmentWrapper(fragment));
-    }
-
-    private GameRequestDialog(FragmentWrapper fragmentWrapper) {
-        super(fragmentWrapper, DEFAULT_REQUEST_CODE);
+        super(fragment, DEFAULT_REQUEST_CODE);
     }
 
     @Override
@@ -178,8 +146,14 @@ public class GameRequestDialog
                 : new ResultProcessor(callback) {
             @Override
             public void onSuccess(AppCall appCall, Bundle results) {
-                if (results != null) {
-                    callback.onSuccess(new Result(results));
+                JSONObject params;
+                try {
+                    params = BundleJSONConverter.convertToJSON(results);
+                } catch  (JSONException e) {
+                    params = null;
+                }
+                if (params != null) {
+                    callback.onSuccess(new Result(params));
                 } else {
                     onCancel(appCall);
                 }
@@ -215,7 +189,7 @@ public class GameRequestDialog
 
     private class WebHandler extends ModeHandler {
         @Override
-        public boolean canShow(final GameRequestContent content, boolean isBestEffort) {
+        public boolean canShow(final GameRequestContent content) {
             return true;
         }
 

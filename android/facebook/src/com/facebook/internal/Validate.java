@@ -20,25 +20,10 @@
 
 package com.facebook.internal;
 
-import android.Manifest;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.net.Uri;
-import android.os.Looper;
-import android.util.Log;
-
-import com.facebook.CustomTabActivity;
-import com.facebook.FacebookActivity;
-import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
 import com.facebook.FacebookSdkNotInitializedException;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * com.facebook.internal is solely for the use of other packages within the Facebook SDK for
@@ -46,31 +31,6 @@ import java.util.List;
  * removed without warning at any time.
  */
 public final class Validate {
-
-    private static final String TAG = Validate.class.getName();
-
-    private static final String NO_INTERNET_PERMISSION_REASON =
-            "No internet permissions granted for the app, please add " +
-            "<uses-permission android:name=\"android.permission.INTERNET\" /> " +
-            "to your AndroidManifest.xml.";
-
-    private static final String FACEBOOK_ACTIVITY_NOT_FOUND_REASON =
-            "FacebookActivity is not declared in the AndroidManifest.xml, please add " +
-            "com.facebook.FacebookActivity to your AndroidManifest.xml file. See " +
-            "https://developers.facebook.com/docs/android/getting-started for more info.";
-
-    private static final String CUSTOM_TAB_REDIRECT_ACTIVITY_NOT_FOUND_REASON =
-            "FacebookActivity is declared incorrectly in the AndroidManifest.xml, please " +
-            "add com.facebook.FacebookActivity to your AndroidManifest.xml file. " +
-            "See https://developers.facebook.com/docs/android/getting-started for more info.";
-
-    private static final String CONTENT_PROVIDER_NOT_FOUND_REASON =
-            "A ContentProvider for this app was not set up in the AndroidManifest.xml, please " +
-            "add %s as a provider to your AndroidManifest.xml file. See " +
-            "https://developers.facebook.com/docs/sharing/android for more info.";
-
-    private static final String CONTENT_PROVIDER_BASE = "com.facebook.app.FacebookContentProvider";
-
     public static void notNull(Object arg, String name) {
         if (arg == null) {
             throw new NullPointerException("Argument '" + name + "' cannot be null");
@@ -112,12 +72,6 @@ public final class Validate {
         Validate.notEmpty(container, name);
     }
 
-    public static void runningOnUiThread() {
-        if (!Looper.getMainLooper().equals(Looper.myLooper())) {
-            throw new FacebookException("This method should be called from the UI thread");
-        }
-    }
-
     public static void notNullOrEmpty(String arg, String name) {
         if (Utility.isNullOrEmpty(arg)) {
             throw new IllegalArgumentException("Argument '" + name + "' cannot be null or empty");
@@ -142,146 +96,7 @@ public final class Validate {
 
     public static void sdkInitialized() {
         if (!FacebookSdk.isInitialized()) {
-            throw new FacebookSdkNotInitializedException(
-                    "The SDK has not been initialized, make sure to call " +
-                    "FacebookSdk.sdkInitialize() first.");
-        }
-    }
-
-    public static String hasAppID() {
-        String id = FacebookSdk.getApplicationId();
-        if (id == null) {
-            throw new IllegalStateException("No App ID found, please set the App ID.");
-        }
-        return id;
-    }
-
-    public static String hasClientToken() {
-        String token = FacebookSdk.getClientToken();
-        if (token == null) {
-            throw new IllegalStateException("No Client Token found, please set the Client Token.");
-        }
-        return token;
-    }
-
-    public static void hasInternetPermissions(Context context) {
-        Validate.hasInternetPermissions(context, true);
-    }
-
-    public static void hasInternetPermissions(Context context, boolean shouldThrow) {
-        Validate.notNull(context, "context");
-        if (context.checkCallingOrSelfPermission(Manifest.permission.INTERNET) ==
-                PackageManager.PERMISSION_DENIED) {
-            if (shouldThrow) {
-                throw new IllegalStateException(NO_INTERNET_PERMISSION_REASON);
-            } else {
-                Log.w(TAG, NO_INTERNET_PERMISSION_REASON);
-            }
-        }
-    }
-
-    public static boolean hasWiFiPermission(Context context) {
-        return hasPermission(context, Manifest.permission.ACCESS_WIFI_STATE);
-    }
-
-    public static boolean hasChangeWifiStatePermission(Context context) {
-        return hasPermission(context, Manifest.permission.CHANGE_WIFI_STATE);
-    }
-
-    public static boolean hasLocationPermission(Context context) {
-        return hasPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-                || hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
-    }
-
-    public static boolean hasBluetoothPermission(Context context) {
-        return hasPermission(context, Manifest.permission.BLUETOOTH)
-                && hasPermission(context, Manifest.permission.BLUETOOTH_ADMIN);
-    }
-
-    public static boolean hasPermission(Context context, String permission) {
-        return context.checkCallingOrSelfPermission(permission) ==
-          PackageManager.PERMISSION_GRANTED;
-    }
-
-    public static void hasFacebookActivity(Context context) {
-        Validate.hasFacebookActivity(context, true);
-    }
-
-    @SuppressWarnings("WrongConstant")
-    public static void hasFacebookActivity(Context context, boolean shouldThrow) {
-        Validate.notNull(context, "context");
-        PackageManager pm = context.getPackageManager();
-        ActivityInfo activityInfo = null;
-        if (pm != null) {
-            ComponentName componentName =
-                    new ComponentName(context, FacebookActivity.class);
-            try {
-                activityInfo = pm.getActivityInfo(componentName, PackageManager.GET_ACTIVITIES);
-            } catch (PackageManager.NameNotFoundException e) {
-                // ignore
-            }
-        }
-        if (activityInfo == null) {
-            if (shouldThrow) {
-                throw new IllegalStateException(FACEBOOK_ACTIVITY_NOT_FOUND_REASON);
-            } else {
-                Log.w(TAG, FACEBOOK_ACTIVITY_NOT_FOUND_REASON);
-            }
-        }
-    }
-
-    public static void checkCustomTabRedirectActivity(Context context) {
-        Validate.checkCustomTabRedirectActivity(context, true);
-    }
-
-    public static void checkCustomTabRedirectActivity(Context context, boolean shouldThrow) {
-        if (!hasCustomTabRedirectActivity(context)) {
-            if (shouldThrow) {
-                throw new IllegalStateException(CUSTOM_TAB_REDIRECT_ACTIVITY_NOT_FOUND_REASON);
-            } else {
-                Log.w(TAG, CUSTOM_TAB_REDIRECT_ACTIVITY_NOT_FOUND_REASON);
-            }
-        }
-    }
-
-    public static boolean hasCustomTabRedirectActivity(Context context) {
-        Validate.notNull(context, "context");
-        PackageManager pm = context.getPackageManager();
-        List<ResolveInfo> infos = null;
-        if (pm != null) {
-            Intent intent = new Intent();
-            intent.setAction(Intent.ACTION_VIEW);
-            intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.addCategory(Intent.CATEGORY_BROWSABLE);
-            intent.setData(Uri.parse("fb" + FacebookSdk.getApplicationId() + "://authorize"));
-            infos = pm.queryIntentActivities(intent, PackageManager.GET_RESOLVED_FILTER);
-        }
-        boolean hasActivity = false;
-        if (infos != null) {
-            for (ResolveInfo info : infos) {
-                ActivityInfo activityInfo = info.activityInfo;
-                if (activityInfo.name.equals(CustomTabActivity.class.getName())) {
-                    hasActivity = true;
-                } else {
-                    // another application is listening for this url scheme, don't open
-                    // Custom Tab for security reasons
-                    return false;
-                }
-            }
-        }
-        return hasActivity;
-    }
-
-    public static void hasContentProvider(Context context) {
-        Validate.notNull(context, "context");
-        String appId = Validate.hasAppID();
-        PackageManager pm = context.getPackageManager();
-        if (pm != null) {
-            String providerName = CONTENT_PROVIDER_BASE + appId;
-            if (pm.resolveContentProvider(providerName, 0) == null) {
-                throw new IllegalStateException(
-                        String.format(CONTENT_PROVIDER_NOT_FOUND_REASON, providerName));
-            }
+            throw new FacebookSdkNotInitializedException();
         }
     }
 }

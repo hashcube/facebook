@@ -24,6 +24,7 @@ import android.os.Parcel;
 
 import com.facebook.share.model.ShareModel;
 import com.facebook.share.model.ShareModelBuilder;
+import com.facebook.share.widget.LikeView;
 
 /**
  * com.facebook.share.internal is solely for the use of other packages within the
@@ -35,7 +36,7 @@ import com.facebook.share.model.ShareModelBuilder;
 public class LikeContent implements ShareModel {
 
     private final String objectId;
-    private final String objectType;
+    private final LikeView.ObjectType objectType;
 
     private LikeContent(final Builder builder) {
         this.objectId = builder.objectId;
@@ -44,7 +45,7 @@ public class LikeContent implements ShareModel {
 
     LikeContent(final Parcel in) {
         this.objectId = in.readString();
-        this.objectType = in.readString();
+        this.objectType = LikeView.ObjectType.fromInt(in.readInt());
     }
 
     /**
@@ -61,7 +62,7 @@ public class LikeContent implements ShareModel {
      *
      * @return the type of the object
      */
-    public String getObjectType() {
+    public LikeView.ObjectType getObjectType() {
         return objectType;
     }
 
@@ -71,20 +72,8 @@ public class LikeContent implements ShareModel {
 
     public void writeToParcel(final Parcel out, final int flags) {
         out.writeString(this.objectId);
-        out.writeString(this.objectType);
+        out.writeInt(this.objectType.getValue());
     }
-
-    @SuppressWarnings("unused")
-    public static final Creator<LikeContent> CREATOR =
-            new Creator<LikeContent>() {
-                public LikeContent createFromParcel(final Parcel in) {
-                    return new LikeContent(in);
-                }
-
-                public LikeContent[] newArray(final int size) {
-                    return new LikeContent[size];
-                }
-            };
 
     /**
      * Builder class for a concrete instance of AppInviteContent
@@ -92,7 +81,7 @@ public class LikeContent implements ShareModel {
     public static class Builder
             implements ShareModelBuilder<LikeContent, Builder> {
         private String objectId;
-        private String objectType;
+        private LikeView.ObjectType objectType = LikeView.ObjectType.UNKNOWN;
 
         /**
          * Sets the object Id for the LikeView
@@ -107,8 +96,8 @@ public class LikeContent implements ShareModel {
          * Sets the type of the object for the LikeView
          * @param objectType the type of the object
          */
-        public Builder setObjectType(final String objectType) {
-            this.objectType = objectType;
+        public Builder setObjectType(final LikeView.ObjectType objectType) {
+            this.objectType = objectType == null ? LikeView.ObjectType.UNKNOWN : objectType;
             return this;
         }
 
@@ -125,6 +114,12 @@ public class LikeContent implements ShareModel {
             return this
                     .setObjectId(content.getObjectId())
                     .setObjectType(content.getObjectType());
+        }
+
+        @Override
+        public Builder readFrom(final Parcel parcel) {
+            return this.readFrom((LikeContent) parcel
+                    .readParcelable(LikeContent.class.getClassLoader()));
         }
     }
 }

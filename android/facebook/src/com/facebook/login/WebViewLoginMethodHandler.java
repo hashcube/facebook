@@ -21,18 +21,32 @@
 package com.facebook.login;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v4.app.FragmentActivity;
+import android.text.TextUtils;
+import android.webkit.CookieSyncManager;
 
+import com.facebook.AccessToken;
 import com.facebook.AccessTokenSource;
-import com.facebook.FacebookException;
+import com.facebook.appevents.AppEventsConstants;
 import com.facebook.internal.FacebookDialogFragment;
+import com.facebook.FacebookException;
+import com.facebook.FacebookOperationCanceledException;
+import com.facebook.FacebookRequestError;
+import com.facebook.FacebookServiceException;
 import com.facebook.internal.ServerProtocol;
+import com.facebook.internal.Utility;
 import com.facebook.internal.WebDialog;
 
-class WebViewLoginMethodHandler extends WebLoginMethodHandler {
+import java.util.Locale;
+
+class WebViewLoginMethodHandler extends LoginMethodHandler {
+    private static final String WEB_VIEW_AUTH_HANDLER_STORE =
+            "com.facebook.login.AuthorizationClient.WebViewAuthHandler.TOKEN_STORE_KEY";
+    private static final String WEB_VIEW_AUTH_HANDLER_TOKEN_KEY = "TOKEN";
 
     private WebDialog loginDialog;
     private String e2e;
@@ -44,11 +58,6 @@ class WebViewLoginMethodHandler extends WebLoginMethodHandler {
     @Override
     String getNameForLogging() {
         return "web_view";
-    }
-
-    @Override
-    AccessTokenSource getTokenSource() {
-        return AccessTokenSource.WEB_VIEW;
     }
 
     @Override
@@ -66,7 +75,36 @@ class WebViewLoginMethodHandler extends WebLoginMethodHandler {
 
     @Override
     boolean tryAuthorize(final LoginClient.Request request) {
-        Bundle parameters = getParameters(request);
+        Bundle parameters = new Bundle();
+        if (!Utility.isNullOrEmpty(request.getPermissions())) {
+            String scope = TextUtils.join(",", request.getPermissions());
+            parameters.putString(ServerProtocol.DIALOG_PARAM_SCOPE, scope);
+            addLoggingExtra(ServerProtocol.DIALOG_PARAM_SCOPE, scope);
+        }
+
+        DefaultAudience audience = request.getDefaultAudience();
+        parameters.putString(
+                ServerProtocol.DIALOG_PARAM_DEFAULT_AUDIENCE, audience.getNativeProtocolAudience());
+
+        AccessToken previousToken = AccessToken.getCurrentAccessToken();
+        String previousTokenString = previousToken != null ? previousToken.getToken() : null;
+        if (previousTokenString != null
+                && (previousTokenString.equals(loadCookieToken()))) {
+            parameters.putString(
+                    ServerProtocol.DIALOG_PARAM_ACCESS_TOKEN,
+                    previousTokenString);
+            // Don't log the actual access token, just its presence or absence.
+            addLoggingExtra(
+                    ServerProtocol.DIALOG_PARAM_ACCESS_TOKEN,
+                    AppEventsConstants.EVENT_PARAM_VALUE_YES);
+        } else {
+            // The call to clear cookies will create the first instance of CookieSyncManager if
+            // necessary
+            Utility.clearFacebookCookies(loginClient.getActivity());
+            addLoggingExtra(
+                    ServerProtocol.DIALOG_PARAM_ACCESS_TOKEN,
+                    AppEventsConstants.EVENT_PARAM_VALUE_NO);
+        }
 
         WebDialog.OnCompleteListener listener = new WebDialog.OnCompleteListener() {
             @Override
@@ -99,7 +137,81 @@ class WebViewLoginMethodHandler extends WebLoginMethodHandler {
 
     void onWebDialogComplete(LoginClient.Request request, Bundle values,
             FacebookException error) {
-        super.onComplete(request, values, error);
+        LoginClient.Result outcome;
+        if (values != null) {
+            // Actual e2e we got from the dialog should be used for logging.
+            if (values.containsKey(ServerProtocol.DIALOG_PARAM_E2E)) {
+                e2e = values.getString(ServerProtocol.DIALOG_PARAM_E2E);
+            }
+
+            try {
+                AccessToken token = createAccessTokenFromWebBundle(
+                        request.getPermissions(),
+                        values,
+                        AccessTokenSource.WEB_VIEW,
+                        request.getApplicationId());
+                outcome = LoginClient.Result.createTokenResult(
+                        loginClient.getPendingRequest(),
+                        token);
+
+                // Ensure any cookies set by the dialog are saved
+                // This is to work around a bug where CookieManager may fail to instantiate if
+                // CookieSyncManager has never been created.
+                CookieSyncManager syncManager =
+                        CookieSyncManager.createInstance(loginClient.getActivity());
+                syncManager.sync();
+                saveCookieToken(token.getToken());
+            } catch (FacebookException ex) {
+                outcome = LoginClient.Result.createErrorResult(
+                        loginClient.getPendingRequest(),
+                        null,
+                        ex.getMessage());
+            }
+        } else {
+            if (error instanceof FacebookOperationCanceledException) {
+                outcome = LoginClient.Result.createCancelResult(loginClient.getPendingRequest(),
+                        "User canceled log in.");
+            } else {
+                // Something went wrong, don't log a completion event since it will skew timing
+                // results.
+                e2e = null;
+
+                String errorCode = null;
+                String errorMessage = error.getMessage();
+                if (error instanceof FacebookServiceException) {
+                    FacebookRequestError requestError =
+                            ((FacebookServiceException)error).getRequestError();
+                    errorCode = String.format(Locale.ROOT, "%d", requestError.getErrorCode());
+                    errorMessage = requestError.toString();
+                }
+                outcome = LoginClient.Result.createErrorResult(loginClient.getPendingRequest(),
+                        null, errorMessage, errorCode);
+            }
+        }
+
+        if (!Utility.isNullOrEmpty(e2e)) {
+            logWebLoginCompleted(e2e);
+        }
+
+        loginClient.completeAndValidate(outcome);
+    }
+
+    private void saveCookieToken(String token) {
+        Context context = loginClient.getActivity();
+        context.getSharedPreferences(
+                WEB_VIEW_AUTH_HANDLER_STORE,
+                Context.MODE_PRIVATE)
+            .edit()
+            .putString(WEB_VIEW_AUTH_HANDLER_TOKEN_KEY, token)
+            .apply();
+    }
+
+    private String loadCookieToken() {
+        Context context = loginClient.getActivity();
+        SharedPreferences sharedPreferences = context.getSharedPreferences(
+                WEB_VIEW_AUTH_HANDLER_STORE,
+                Context.MODE_PRIVATE);
+        return sharedPreferences.getString(WEB_VIEW_AUTH_HANDLER_TOKEN_KEY, "");
     }
 
     static class AuthDialogBuilder extends WebDialog.Builder {
@@ -134,9 +246,13 @@ class WebViewLoginMethodHandler extends WebLoginMethodHandler {
             parameters.putString(
                     ServerProtocol.DIALOG_PARAM_RETURN_SCOPES,
                     ServerProtocol.DIALOG_RETURN_SCOPES_TRUE);
-            parameters.putString(
+
+            // Set the re-request auth type for requests
+            if (isRerequest) {
+                parameters.putString(
                         ServerProtocol.DIALOG_PARAM_AUTH_TYPE,
                         ServerProtocol.DIALOG_REREQUEST_AUTH_TYPE);
+            }
 
             return new WebDialog(getContext(), OAUTH_DIALOG, parameters, getTheme(), getListener());
         }

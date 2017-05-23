@@ -24,13 +24,9 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 
 import com.facebook.FacebookException;
-import com.facebook.FacebookSdk;
 import com.facebook.internal.Utility;
-import com.facebook.internal.Validate;
 import com.facebook.share.model.ShareContent;
 import com.facebook.share.model.ShareLinkContent;
-import com.facebook.share.model.ShareMedia;
-import com.facebook.share.model.ShareMediaContent;
 import com.facebook.share.model.ShareOpenGraphAction;
 import com.facebook.share.model.ShareOpenGraphContent;
 import com.facebook.share.model.ShareOpenGraphObject;
@@ -53,7 +49,6 @@ public class ShareContentValidation {
 
     private static Validator WebShareValidator;
     private static Validator DefaultValidator;
-    private static Validator ApiValidator;
 
     public static void validateForMessage(ShareContent content) {
         validate(content, getDefaultValidator());
@@ -68,7 +63,7 @@ public class ShareContentValidation {
     }
 
     public static void validateForApiShare(ShareContent content) {
-        validate(content, getApiValidator());
+        validate(content, getDefaultValidator());
     }
 
     private static Validator getDefaultValidator() {
@@ -76,13 +71,6 @@ public class ShareContentValidation {
             DefaultValidator = new Validator();
         }
         return DefaultValidator;
-    }
-
-    private static Validator getApiValidator() {
-        if (ApiValidator == null) {
-            ApiValidator = new ApiValidator();
-        }
-        return ApiValidator;
     }
 
     private static Validator getWebShareValidator() {
@@ -106,8 +94,6 @@ public class ShareContentValidation {
             validator.validate((ShareVideoContent) content);
         } else if (content instanceof ShareOpenGraphContent) {
             validator.validate((ShareOpenGraphContent) content);
-        } else if (content instanceof ShareMediaContent) {
-            validator.validate((ShareMediaContent) content);
         }
     }
 
@@ -138,7 +124,7 @@ public class ShareContentValidation {
         }
     }
 
-    private static void validatePhoto(SharePhoto photo) {
+    private static void validatePhotoForNativeDialog(SharePhoto photo, Validator validator) {
         if (photo == null) {
             throw new FacebookException("Cannot share a null SharePhoto");
         }
@@ -146,34 +132,31 @@ public class ShareContentValidation {
         Bitmap photoBitmap = photo.getBitmap();
         Uri photoUri = photo.getImageUrl();
 
-        if (photoBitmap == null && photoUri == null) {
-            throw new FacebookException("SharePhoto does not have a Bitmap or ImageUrl specified");
-        }
-    }
+        if (photoBitmap == null) {
+            if (photoUri == null) {
+                throw new FacebookException(
+                        "SharePhoto does not have a Bitmap or ImageUrl specified");
+            }
 
-    private static void validatePhotoForApi(SharePhoto photo, Validator validator) {
-        validatePhoto(photo);
-
-        Bitmap photoBitmap = photo.getBitmap();
-        Uri photoUri = photo.getImageUrl();
-
-        if (photoBitmap == null && Utility.isWebUri(photoUri) && !validator.isOpenGraphContent()) {
-            throw new FacebookException(
-                    "Cannot set the ImageUrl of a SharePhoto to the Uri of an image on the " +
-                            "web when sharing SharePhotoContent");
-        }
-    }
-
-    private static void validatePhotoForNativeDialog(SharePhoto photo, Validator validator) {
-        validatePhotoForApi(photo, validator);
-
-        if (photo.getBitmap() != null || !Utility.isWebUri(photo.getImageUrl())) {
-            Validate.hasContentProvider(FacebookSdk.getApplicationContext());
+            if (Utility.isWebUri(photoUri) && !validator.isOpenGraphContent()) {
+                throw new FacebookException(
+                        "Cannot set the ImageUrl of a SharePhoto to the Uri of an image on the " +
+                                "web when sharing SharePhotoContent");
+            }
         }
     }
 
     private static void validatePhotoForWebDialog(SharePhoto photo, Validator validator) {
-        validatePhoto(photo);
+        if (photo == null) {
+            throw new FacebookException("Cannot share a null SharePhoto");
+        }
+
+        Uri imageUri = photo.getImageUrl();
+        if (imageUri == null || !Utility.isWebUri(imageUri)) {
+            throw new FacebookException(
+                    "SharePhoto must have a non-null imageUrl set to the Uri of an image " +
+                            "on the web");
+        }
     }
 
     private static void validateVideoContent(
@@ -191,44 +174,8 @@ public class ShareContentValidation {
             throw new FacebookException("Cannot share a null ShareVideo");
         }
 
-        Uri localUri = video.getLocalUrl();
-        if (localUri == null) {
+        if (video.getLocalUrl() == null) {
             throw new FacebookException("ShareVideo does not have a LocalUrl specified");
-        }
-
-        if (!Utility.isContentUri(localUri) && !Utility.isFileUri(localUri)) {
-            throw new FacebookException("ShareVideo must reference a video that is on the device");
-        }
-    }
-
-    private static void validateMediaContent(ShareMediaContent mediaContent, Validator validator) {
-        List<ShareMedia> media = mediaContent.getMedia();
-        if (media == null || media.isEmpty()) {
-            throw new FacebookException("Must specify at least one medium in ShareMediaContent.");
-        }
-        if (media.size() > ShareConstants.MAXIMUM_MEDIA_COUNT) {
-            throw new FacebookException(
-                    String.format(
-                            Locale.ROOT,
-                            "Cannot add more than %d media.",
-                            ShareConstants.MAXIMUM_MEDIA_COUNT));
-        }
-        for (ShareMedia medium : media) {
-            validator.validate(medium);
-        }
-    }
-
-    public static void validateMedium(ShareMedia medium, Validator validator) {
-        if (medium instanceof SharePhoto) {
-            validator.validate((SharePhoto) medium);
-        } else if (medium instanceof ShareVideo) {
-            validator.validate((ShareVideo) medium);
-        } else {
-            throw new FacebookException(
-                    String.format(
-                            Locale.ROOT,
-                            "Invalid media type: %s",
-                            medium.getClass().getSimpleName()));
         }
     }
 
@@ -260,7 +207,7 @@ public class ShareContentValidation {
             throw new FacebookException("ShareOpenGraphAction must have a non-empty actionType");
         }
 
-        validator.validate(openGraphAction, false);
+        validator.validate((ShareOpenGraphValueContainer) openGraphAction, false);
     }
 
     private static void validateOpenGraphObject(
@@ -270,7 +217,7 @@ public class ShareContentValidation {
             throw new FacebookException("Cannot share a null ShareOpenGraphObject");
         }
 
-        validator.validate(openGraphObject, true);
+        validator.validate((ShareOpenGraphValueContainer) openGraphObject, true);
     }
 
     private static void validateOpenGraphValueContainer(
@@ -324,54 +271,18 @@ public class ShareContentValidation {
 
     private static class WebShareValidator extends Validator {
         @Override
+        public void validate(final SharePhotoContent photoContent) {
+            throw new FacebookException("Cannot share SharePhotoContent via web sharing dialogs");
+        }
+
+        @Override
         public void validate(final ShareVideoContent videoContent) {
             throw new FacebookException("Cannot share ShareVideoContent via web sharing dialogs");
         }
 
         @Override
-        public void validate(ShareMediaContent mediaContent) {
-            throw new FacebookException("Cannot share ShareMediaContent via web sharing dialogs");
-        }
-
-        @Override
         public void validate(final SharePhoto photo) {
             validatePhotoForWebDialog(photo, this);
-        }
-    }
-
-    private static class ApiValidator extends Validator {
-        @Override
-        public void validate(final SharePhoto photo) {
-            validatePhotoForApi(photo, this);
-        }
-
-        @Override
-        public void validate(ShareVideoContent videoContent) {
-            if (!Utility.isNullOrEmpty(videoContent.getPlaceId())) {
-                throw new FacebookException(
-                        "Cannot share video content with place IDs using the share api");
-            }
-            if (!Utility.isNullOrEmpty(videoContent.getPeopleIds())) {
-                throw new FacebookException(
-                        "Cannot share video content with people IDs using the share api");
-            }
-            if (!Utility.isNullOrEmpty(videoContent.getRef())) {
-                throw new FacebookException(
-                        "Cannot share video content with referrer URL using the share api");
-            }
-        }
-
-        @Override
-        public void validate(ShareMediaContent mediaContent) {
-            throw new FacebookException("Cannot share ShareMediaContent using the share api");
-        }
-
-        @Override
-        public void validate(ShareLinkContent linkContent) {
-            if (!Utility.isNullOrEmpty(linkContent.getQuote())) {
-                throw new FacebookException(
-                        "Cannot share link content with quote using the share api");
-            }
         }
     }
 
@@ -388,10 +299,6 @@ public class ShareContentValidation {
 
         public void validate(final ShareVideoContent videoContent) {
             validateVideoContent(videoContent, this);
-        }
-
-        public void validate(final ShareMediaContent mediaContent) {
-            validateMediaContent(mediaContent, this);
         }
 
         public void validate(final ShareOpenGraphContent openGraphContent) {
@@ -418,10 +325,6 @@ public class ShareContentValidation {
 
         public void validate(final ShareVideo video) {
             validateVideo(video, this);
-        }
-
-        public void validate(final ShareMedia medium) {
-            validateMedium(medium, this);
         }
 
         public boolean isOpenGraphContent() {

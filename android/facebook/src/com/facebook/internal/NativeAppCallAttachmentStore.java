@@ -81,7 +81,7 @@ public final class NativeAppCallAttachmentStore {
             File outputFile) throws IOException {
         FileOutputStream outputStream = new FileOutputStream(outputFile);
         try {
-            InputStream inputStream;
+            InputStream inputStream = null;
             if (!isContentUri) {
                 inputStream = new FileInputStream(imageUri.getPath());
             } else {
@@ -113,7 +113,7 @@ public final class NativeAppCallAttachmentStore {
 
         try {
             for (Attachment attachment : attachments) {
-                if (!attachment.shouldCreateFile) {
+                if (!attachment.isBinaryData) {
                     continue;
                 }
 
@@ -125,9 +125,9 @@ public final class NativeAppCallAttachmentStore {
 
                 if (attachment.bitmap != null) {
                     processAttachmentBitmap(attachment.bitmap, file);
-                } else if (attachment.originalUri != null) {
+                } else if (attachment.imageUri != null) {
                     processAttachmentFile(
-                            attachment.originalUri,
+                            attachment.imageUri,
                             attachment.isContentUri,
                             file);
                 }
@@ -230,36 +230,35 @@ public final class NativeAppCallAttachmentStore {
         private final String attachmentName;
 
         private Bitmap bitmap;
-        private Uri originalUri;
+        private Uri imageUri;
 
         private boolean isContentUri;
-        private boolean shouldCreateFile;
+        private boolean isBinaryData;
 
         private Attachment(UUID callId, Bitmap bitmap, Uri uri) {
             this.callId = callId;
             this.bitmap = bitmap;
-            this.originalUri = uri;
+            this.imageUri = uri;
 
             if (uri != null) {
                 String scheme = uri.getScheme();
                 if ("content".equalsIgnoreCase(scheme)) {
                     isContentUri = true;
-                    shouldCreateFile = uri.getAuthority() != null &&
-                            !uri.getAuthority().startsWith("media");
+                    isBinaryData = true;
                 } else if ("file".equalsIgnoreCase(uri.getScheme())) {
-                    shouldCreateFile = true;
+                    isBinaryData = true;
                 } else if (!Utility.isWebUri(uri)) {
-                    throw new FacebookException("Unsupported scheme for media Uri : " + scheme);
+                    throw new FacebookException("Unsupported scheme for image Uri : " + scheme);
                 }
             } else if (bitmap != null) {
-                shouldCreateFile = true;
+                isBinaryData = true;
             } else {
-                throw new FacebookException("Cannot share media without a bitmap or Uri set");
+                throw new FacebookException("Cannot share a photo without a bitmap or Uri set");
             }
 
-            attachmentName = !shouldCreateFile ? null : UUID.randomUUID().toString();
-            attachmentUrl = !shouldCreateFile
-                    ? this.originalUri.toString()
+            attachmentName = !isBinaryData ? null : UUID.randomUUID().toString();
+            attachmentUrl = !isBinaryData
+                    ? this.imageUri.toString() // http(s) images can be used directly
                     : FacebookContentProvider.getAttachmentUrl(
                             FacebookSdk.getApplicationId(),
                             callId,

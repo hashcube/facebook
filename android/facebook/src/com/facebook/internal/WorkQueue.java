@@ -222,7 +222,7 @@ public class WorkQueue {
         }
     }
 
-    public interface WorkItem {
+    interface WorkItem {
         boolean cancel();
         boolean isRunning();
         void moveToFront();
