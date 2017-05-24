@@ -25,8 +25,8 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
-import android.content.Context;
 import android.support.v4.app.Fragment;
+import android.content.Context;
 
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
@@ -36,19 +36,13 @@ import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
 import com.facebook.GraphResponse;
-import com.facebook.LoginStatusCallback;
 import com.facebook.Profile;
 import com.facebook.internal.CallbackManagerImpl;
-import com.facebook.internal.FragmentWrapper;
-import com.facebook.internal.NativeProtocol;
-import com.facebook.internal.Utility;
 import com.facebook.internal.Validate;
 import com.facebook.appevents.AppEventsConstants;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -65,8 +59,12 @@ public class LoginManager {
 
     private static volatile LoginManager instance;
 
-    private LoginBehavior loginBehavior = LoginBehavior.NATIVE_WITH_FALLBACK;
+    private LoginBehavior loginBehavior = LoginBehavior.SSO_WITH_FALLBACK;
     private DefaultAudience defaultAudience = DefaultAudience.FRIENDS;
+    private LoginClient.Request pendingLoginRequest;
+    private HashMap<String, String> pendingLoggingExtras;
+    private Context context;
+    private LoginLogger loginLogger;
 
     LoginManager() {
         Validate.sdkInitialized();
@@ -109,29 +107,7 @@ public class LoginManager {
      * @param fragment The fragment which is starting the login process.
      * @param response The response that has the error.
      */
-    public void resolveError(Fragment fragment, final GraphResponse response) {
-        this.resolveError(new FragmentWrapper(fragment), response);
-    }
-
-    /**
-     * Starts the login process to resolve the error defined in the response. The registered login
-     * callbacks will be called on completion.
-     *
-     * @param fragment The android.app.Fragment which is starting the login process.
-     * @param response The response that has the error.
-     */
-    public void resolveError(final android.app.Fragment fragment, final GraphResponse response) {
-        this.resolveError(new FragmentWrapper(fragment), response);
-    }
-
-    /**
-     * Starts the login process to resolve the error defined in the response. The registered login
-     * callbacks will be called on completion.
-     *
-     * @param fragment The fragment which is starting the login process.
-     * @param response The response that has the error.
-     */
-    private void resolveError(final FragmentWrapper fragment, final GraphResponse response) {
+    public void resolveError(final Fragment fragment, final GraphResponse response) {
         startLogin(
                 new FragmentStartActivityDelegate(fragment),
                 createLoginRequestFromResponse(response)
@@ -175,18 +151,21 @@ public class LoginManager {
     }
 
     boolean onActivityResult(int resultCode, Intent data, FacebookCallback<LoginResult>  callback) {
+
+        if (pendingLoginRequest == null) {
+            return false;
+        }
+
         FacebookException exception = null;
         AccessToken newToken = null;
         LoginClient.Result.Code code = LoginClient.Result.Code.ERROR;
         Map<String, String> loggingExtras = null;
-        LoginClient.Request originalRequest = null;
 
         boolean isCanceled = false;
         if (data != null) {
-            LoginClient.Result result =
+            LoginClient.Result result = (LoginClient.Result)
                     data.getParcelableExtra(LoginFragment.RESULT_KEY);
             if (result != null) {
-                originalRequest = result.request;
                 code = result.code;
                 if (resultCode == Activity.RESULT_OK) {
                     if (result.code == LoginClient.Result.Code.SUCCESS) {
@@ -208,17 +187,9 @@ public class LoginManager {
             exception = new FacebookException("Unexpected call to LoginManager.onActivityResult");
         }
 
-        boolean wasLoginActivityTried = true;
-        Context context = null; //Sadly, there is no way to get activity context at this point.S
-        logCompleteLogin(
-                context,
-                code,
-                loggingExtras,
-                exception,
-                wasLoginActivityTried,
-                originalRequest);
+        logCompleteLogin(code, loggingExtras, exception);
 
-        finishLogin(newToken, originalRequest, exception, isCanceled, callback);
+        finishLogin(newToken, exception, isCanceled, callback);
 
         return true;
     }
@@ -268,50 +239,11 @@ public class LoginManager {
     }
 
     /**
-     * Retrieves the login status for the user. This will return an access token for the app if
-     * a user is logged into the Facebook for Android app on the same device and that user had
-     * previously logged into the app.
-     * If an access token was retrieved then a toast will be shown telling the user that they have
-     * been logged in.
-     * @param context An Android context
-     * @param responseCallback The callback to be called when the request completes
-     */
-    public void retrieveLoginStatus(
-        final Context context,
-        final LoginStatusCallback responseCallback) {
-        retrieveLoginStatusImpl(context, responseCallback);
-    }
-
-    /**
-     * Logs the user in with the requested read permissions.
-     * @param fragment    The android.support.v4.app.Fragment which is starting the login process.
-     * @param permissions The requested permissions.
-     */
-    public void logInWithReadPermissions(
-            Fragment fragment,
-            Collection<String> permissions) {
-        logInWithReadPermissions(new FragmentWrapper(fragment), permissions);
-    }
-
-    /**
-     * Logs the user in with the requested read permissions.
-     * @param fragment    The android.app.Fragment which is starting the login process.
-     * @param permissions The requested permissions.
-     */
-    public void logInWithReadPermissions(
-            android.app.Fragment fragment,
-            Collection<String> permissions) {
-        logInWithReadPermissions(new FragmentWrapper(fragment), permissions);
-    }
-
-    /**
      * Logs the user in with the requested read permissions.
      * @param fragment    The fragment which is starting the login process.
      * @param permissions The requested permissions.
      */
-    private void logInWithReadPermissions(
-            FragmentWrapper fragment,
-            Collection<String> permissions) {
+    public void logInWithReadPermissions(Fragment fragment, Collection<String> permissions) {
         validateReadPermissions(permissions);
 
         LoginClient.Request loginRequest = createLoginRequest(permissions);
@@ -332,34 +264,10 @@ public class LoginManager {
 
     /**
      * Logs the user in with the requested publish permissions.
-     * @param fragment    The android.support.v4.app.Fragment which is starting the login process.
-     * @param permissions The requested permissions.
-     */
-    public void logInWithPublishPermissions(
-            Fragment fragment,
-            Collection<String> permissions) {
-        logInWithPublishPermissions(new FragmentWrapper(fragment), permissions);
-    }
-
-    /**
-     * Logs the user in with the requested publish permissions.
-     * @param fragment    The android.app.Fragment which is starting the login process.
-     * @param permissions The requested permissions.
-     */
-    public void logInWithPublishPermissions(
-            android.app.Fragment fragment,
-            Collection<String> permissions) {
-        logInWithPublishPermissions(new FragmentWrapper(fragment), permissions);
-    }
-
-    /**
-     * Logs the user in with the requested publish permissions.
      * @param fragment    The fragment which is starting the login process.
      * @param permissions The requested permissions.
      */
-    private void logInWithPublishPermissions(
-            FragmentWrapper fragment,
-            Collection<String> permissions) {
+    public void logInWithPublishPermissions(Fragment fragment, Collection<String> permissions) {
         validatePublishPermissions(permissions);
 
         LoginClient.Request loginRequest = createLoginRequest(permissions);
@@ -376,6 +284,10 @@ public class LoginManager {
 
         LoginClient.Request loginRequest = createLoginRequest(permissions);
         startLogin(new ActivityStartActivityDelegate(activity), loginRequest);
+    }
+
+    LoginClient.Request getPendingLoginRequest() {
+        return pendingLoginRequest;
     }
 
     private void validateReadPermissions(Collection<String> permissions) {
@@ -407,7 +319,7 @@ public class LoginManager {
         }
     }
 
-    static boolean isPublishPermission(String permission) {
+    private static boolean isPublishPermission(String permission) {
         return permission != null &&
             (permission.startsWith(PUBLISH_PERMISSION_PREFIX) ||
                 permission.startsWith(MANAGE_PERMISSION_PREFIX) ||
@@ -423,7 +335,7 @@ public class LoginManager {
         return Collections.unmodifiableSet(set);
     }
 
-    protected LoginClient.Request createLoginRequest(Collection<String> permissions) {
+    private LoginClient.Request createLoginRequest(Collection<String> permissions) {
         LoginClient.Request request = new LoginClient.Request(
                 loginBehavior,
                 Collections.unmodifiableSet(
@@ -441,7 +353,11 @@ public class LoginManager {
             LoginClient.Request request
     ) throws FacebookException {
 
-        logStartLogin(startActivityDelegate.getActivityContext(), request);
+        this.pendingLoginRequest = request;
+        this.pendingLoggingExtras = new HashMap<>();
+        this.context = startActivityDelegate.getActivityContext();
+
+        logStartLogin();
 
         // Make sure the static handler for login is registered if there isn't an explicit callback
         CallbackManagerImpl.registerStaticCallback(
@@ -454,58 +370,49 @@ public class LoginManager {
                 }
         );
 
-        boolean started = tryFacebookActivity(startActivityDelegate, request);
+        boolean started = tryLoginActivity(startActivityDelegate, request);
+
+        pendingLoggingExtras.put(
+                LoginLogger.EVENT_EXTRAS_TRY_LOGIN_ACTIVITY,
+                started ?
+                AppEventsConstants.EVENT_PARAM_VALUE_YES : AppEventsConstants.EVENT_PARAM_VALUE_NO
+        );
 
         if (!started) {
             FacebookException exception = new FacebookException(
-                    "Log in attempt failed: FacebookActivity could not be started." +
-                            " Please make sure you added FacebookActivity to the AndroidManifest.");
-            boolean wasLoginActivityTried = false;
-            logCompleteLogin(
-                    startActivityDelegate.getActivityContext(),
-                    LoginClient.Result.Code.ERROR,
-                    null,
-                    exception,
-                    wasLoginActivityTried,
-                    request);
+                    "Log in attempt failed: LoginActivity could not be started");
+            logCompleteLogin(LoginClient.Result.Code.ERROR, null, exception);
+            this.pendingLoginRequest = null;
             throw exception;
         }
     }
 
-    private void logStartLogin(Context context, LoginClient.Request loginRequest) {
-        LoginLogger loginLogger = LoginLoggerHolder.getLogger(context);
-        if (loginLogger != null && loginRequest != null) {
-            loginLogger.logStartLogin(loginRequest);
+    private LoginLogger getLogger() {
+        if (loginLogger == null ||
+                !loginLogger.getApplicationId().equals(
+                        pendingLoginRequest.getApplicationId())) {
+            loginLogger = new LoginLogger(
+                    context,
+                    pendingLoginRequest.getApplicationId());
         }
+        return loginLogger;
     }
 
-    private void logCompleteLogin(
-            Context context,
-            LoginClient.Result.Code result,
-            Map<String, String> resultExtras,
-            Exception exception,
-            boolean wasLoginActivityTried,
-            LoginClient.Request request) {
-        LoginLogger loginLogger = LoginLoggerHolder.getLogger(context);
-        if (loginLogger == null) {
-            return;
-        }
-        if (request == null) {
+    private void logStartLogin() {
+        getLogger().logStartLogin(pendingLoginRequest);
+    }
+
+    private void logCompleteLogin(LoginClient.Result.Code result, Map<String, String> resultExtras,
+                                  Exception exception) {
+        if (pendingLoginRequest == null) {
             // We don't expect this to happen, but if it does, log an event for diagnostic purposes.
-            loginLogger.logUnexpectedError(
-                    LoginLogger.EVENT_NAME_LOGIN_COMPLETE,
-                    "Unexpected call to logCompleteLogin with null pendingAuthorizationRequest."
+            getLogger().logUnexpectedError(
+                LoginLogger.EVENT_NAME_LOGIN_COMPLETE,
+                "Unexpected call to logCompleteLogin with null pendingAuthorizationRequest."
             );
         } else {
-            HashMap<String, String> pendingLoggingExtras = new HashMap<>();
-            pendingLoggingExtras.put(
-                    LoginLogger.EVENT_EXTRAS_TRY_LOGIN_ACTIVITY,
-                    wasLoginActivityTried ?
-                            AppEventsConstants.EVENT_PARAM_VALUE_YES :
-                            AppEventsConstants.EVENT_PARAM_VALUE_NO
-            );
-            loginLogger.logCompleteLogin(
-                    request.getAuthId(),
+            getLogger().logCompleteLogin(
+                    pendingLoginRequest.getAuthId(),
                     pendingLoggingExtras,
                     result,
                     resultExtras,
@@ -513,11 +420,11 @@ public class LoginManager {
         }
     }
 
-    private boolean tryFacebookActivity(
+    private boolean tryLoginActivity(
             StartActivityDelegate startActivityDelegate,
             LoginClient.Request request) {
 
-        Intent intent = getFacebookActivityIntent(request);
+        Intent intent = getLoginActivityIntent(request);
 
         if (!resolveIntent(intent)) {
             return false;
@@ -537,18 +444,21 @@ public class LoginManager {
     private boolean resolveIntent(Intent intent) {
         ResolveInfo resolveInfo = FacebookSdk.getApplicationContext().getPackageManager()
             .resolveActivity(intent, 0);
-        return resolveInfo != null;
+        if (resolveInfo == null) {
+            return false;
+        }
+        return true;
     }
 
-    protected Intent getFacebookActivityIntent(LoginClient.Request request) {
+    private Intent getLoginActivityIntent(LoginClient.Request request) {
         Intent intent = new Intent();
         intent.setClass(FacebookSdk.getApplicationContext(), FacebookActivity.class);
         intent.setAction(request.getLoginBehavior().toString());
 
-        // Let FacebookActivity populate extras appropriately
-        Bundle extras = new Bundle();
-        extras.putParcelable(LoginFragment.EXTRA_REQUEST, request);
-        intent.putExtra(LoginFragment.REQUEST_KEY, extras);
+        // Let LoginActivity populate extras appropriately
+        LoginClient.Request authClientRequest = request;
+        Bundle extras = LoginFragment.populateIntentExtras(authClientRequest);
+        intent.putExtras(extras);
 
         return intent;
     }
@@ -573,7 +483,6 @@ public class LoginManager {
 
     private void finishLogin(
             AccessToken newToken,
-            LoginClient.Request origRequest,
             FacebookException exception,
             boolean isCanceled,
             FacebookCallback<LoginResult>  callback) {
@@ -584,112 +493,21 @@ public class LoginManager {
 
         if (callback != null) {
             LoginResult loginResult = newToken != null
-                    ? computeLoginResult(origRequest, newToken)
+                    ? computeLoginResult(pendingLoginRequest, newToken)
                     : null;
             // If there are no granted permissions, the operation is treated as cancel.
             if (isCanceled
                     || (loginResult != null
                            && loginResult.getRecentlyGrantedPermissions().size() == 0)) {
                 callback.onCancel();
-            } else if (exception != null) {
+                return;
+            }
+            if (exception != null) {
                 callback.onError(exception);
             } else if (newToken != null) {
                 callback.onSuccess(loginResult);
             }
         }
-    }
-
-    private void retrieveLoginStatusImpl(
-            final Context context,
-            final LoginStatusCallback responseCallback) {
-            final String applicationId = FacebookSdk.getApplicationId();
-            final String loggerRef = UUID.randomUUID().toString();
-        final LoginStatusClient client
-                = new LoginStatusClient(
-                        context,
-                        applicationId,
-                        loggerRef);
-
-        final LoginLogger logger = new LoginLogger(context, applicationId);
-
-        final LoginStatusClient.CompletedListener callback =
-            new LoginStatusClient.CompletedListener() {
-                @Override
-                public void completed(Bundle result) {
-                    if (result != null) {
-
-                        final String errorType = result.getString(NativeProtocol.STATUS_ERROR_TYPE);
-                        final String errorDescription =
-                                result.getString(NativeProtocol.STATUS_ERROR_DESCRIPTION);
-                        if (errorType != null) {
-                            handleLoginStatusError(
-                                    errorType,
-                                    errorDescription,
-                                    loggerRef,
-                                    logger,
-                                    responseCallback);
-                        } else {
-                            final String token =
-                                    result.getString(NativeProtocol.EXTRA_ACCESS_TOKEN);
-                            final long expires =
-                                    result.getLong(
-                                            NativeProtocol.EXTRA_EXPIRES_SECONDS_SINCE_EPOCH);
-                            final ArrayList<String> permissions =
-                                    result.getStringArrayList(NativeProtocol.EXTRA_PERMISSIONS);
-                            final String signedRequest =
-                                    result.getString(NativeProtocol.RESULT_ARGS_SIGNED_REQUEST);
-                            String userId = null;
-                            if (!Utility.isNullOrEmpty(signedRequest)) {
-                                userId =
-                                    LoginMethodHandler.getUserIDFromSignedRequest(signedRequest);
-                            }
-
-                            if (!Utility.isNullOrEmpty(token) &&
-                                    permissions != null &&
-                                    !permissions.isEmpty() &&
-                                    !Utility.isNullOrEmpty(userId)) {
-                                final AccessToken accessToken = new AccessToken(
-                                        token,
-                                        applicationId,
-                                        userId,
-                                        permissions,
-                                        null,
-                                        null,
-                                        new Date(expires),
-                                        null);
-                                AccessToken.setCurrentAccessToken(accessToken);
-                                Profile.fetchProfileForCurrentAccessToken();
-                                logger.logLoginStatusSuccess(loggerRef);
-                                responseCallback.onCompleted(accessToken);
-                            } else {
-                                logger.logLoginStatusFailure(loggerRef);
-                                responseCallback.onFailure();
-                            }
-                        }
-                    } else {
-                        logger.logLoginStatusFailure(loggerRef);
-                        responseCallback.onFailure();
-                    }
-                }
-            };
-
-        client.setCompletedListener(callback);
-        logger.logLoginStatusStart(loggerRef);
-        if (!client.start()) {
-            logger.logLoginStatusFailure(loggerRef);
-            responseCallback.onFailure();
-        };
-    }
-
-    private static void handleLoginStatusError(
-            final String errorType,
-            final String errorDescription,
-            final String loggerRef,
-            final LoginLogger logger,
-            final LoginStatusCallback responseCallback) {
-        final Exception exception = new FacebookException(errorType + ": " + errorDescription);
-        logger.logLoginStatusError(loggerRef, exception);
-        responseCallback.onError(exception);
     }
 
     private static class ActivityStartActivityDelegate implements StartActivityDelegate {
@@ -712,9 +530,9 @@ public class LoginManager {
     }
 
     private static class FragmentStartActivityDelegate implements StartActivityDelegate {
-        private final FragmentWrapper fragment;
+        private final Fragment fragment;
 
-        FragmentStartActivityDelegate(final FragmentWrapper fragment) {
+        FragmentStartActivityDelegate(final Fragment fragment) {
             Validate.notNull(fragment, "fragment");
             this.fragment = fragment;
         }
@@ -727,21 +545,6 @@ public class LoginManager {
         @Override
         public Activity getActivityContext() {
             return fragment.getActivity();
-        }
-    }
-
-    private static class LoginLoggerHolder {
-        private static volatile LoginLogger logger;
-
-        private static synchronized LoginLogger getLogger(Context context) {
-            context = context != null ? context : FacebookSdk.getApplicationContext();
-            if (context == null) {
-                return null;
-            }
-            if (logger == null) {
-                logger = new LoginLogger(context, FacebookSdk.getApplicationId());
-            }
-            return logger;
         }
     }
 }

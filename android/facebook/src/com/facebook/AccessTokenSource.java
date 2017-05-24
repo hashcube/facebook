@@ -48,12 +48,7 @@ public enum AccessTokenSource {
      * Indicates an access token was obtained by the user logging in through the
      * Web-based dialog.
      */
-    WEB_VIEW(true),
-    /**
-     * Indicates an access token was obtained by the user logging in through the
-     * Web-based dialog on a Chrome Custom Tab.
-     */
-    CHROME_CUSTOM_TAB(true),
+    WEB_VIEW(false),
     /**
      * Indicates an access token is for a test user rather than an actual
      * Facebook user.
@@ -62,11 +57,7 @@ public enum AccessTokenSource {
     /**
      * Indicates an access token constructed with a Client Token.
      */
-    CLIENT_TOKEN(true),
-    /**
-     * Indicates an access token constructed from facebook.com/device
-     */
-    DEVICE_AUTH(true);
+    CLIENT_TOKEN(true);
 
     private final boolean canExtendToken;
 

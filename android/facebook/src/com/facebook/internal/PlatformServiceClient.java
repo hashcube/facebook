@@ -142,11 +142,7 @@ abstract public class PlatformServiceClient implements ServiceConnection {
             } else {
                 callback(extras);
             }
-            try {
-                context.unbindService(this);
-            } catch (IllegalArgumentException ex) {
-                // Do nothing, the connection was already unbound
-            }
+            context.unbindService(this);
         }
     }
 

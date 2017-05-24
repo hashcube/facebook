@@ -57,9 +57,6 @@ public class AppEventsConstants {
     /** Log this event when the user has completed a tutorial in the app. */
     public static final String EVENT_NAME_COMPLETED_TUTORIAL = "fb_mobile_tutorial_completion";
 
-    /** Log this event when the app obtained a push registration token from FCM. */
-    public static final String EVENT_NAME_PUSH_TOKEN_OBTAINED = "fb_mobile_obtain_push_token";
-
     // Ecommerce related
 
     /**
@@ -84,13 +81,10 @@ public class AppEventsConstants {
     public static final String EVENT_NAME_ADDED_PAYMENT_INFO = "fb_mobile_add_payment_info";
 
     /**
-     *  @deprecated Use {@link
-     *  AppEventsLogger#logPurchase(java.math.BigDecimal, java.util.Currency)} instead.
-     *  Log this event when the user has completed a purchase. The {@link
-     *  AppEventsLogger#logPurchase(java.math.BigDecimal, java.util.Currency)} method is a shortcut
-     *  for logging this event.
+     * Log this event when the user has completed a purchase. The {@link
+     * AppEventsLogger#logPurchase(java.math.BigDecimal, java.util.Currency)} method is a shortcut
+     * for logging this event.
      */
-    @Deprecated
     public static final String EVENT_NAME_PURCHASED = "fb_mobile_purchase";
 
     // Gaming related

@@ -23,8 +23,6 @@ package com.facebook.internal;
 import com.facebook.FacebookException;
 
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * com.facebook.internal is solely for the use of other packages within the
@@ -57,14 +55,9 @@ public class CollectionMapper {
                 onMapperCompleteListener.onError(exception);
             }
         };
-
-        Iterator<T> keyIterator = collection.keyIterator();
-        List<T> keys = new LinkedList<>();
+        final Iterator<T> keyIterator = collection.keyIterator();
         while (keyIterator.hasNext()) {
-            keys.add(keyIterator.next());
-        }
-
-        for (final T key : keys) {
+            final T key = keyIterator.next();
             final Object value = collection.get(key);
             final OnMapValueCompleteListener onMapValueCompleteListener =
                     new OnMapValueCompleteListener() {

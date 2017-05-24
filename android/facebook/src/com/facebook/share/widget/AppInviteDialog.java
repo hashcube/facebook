@@ -22,18 +22,15 @@ package com.facebook.share.widget;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.facebook.FacebookCallback;
 import com.facebook.internal.*;
 import com.facebook.share.internal.*;
 import com.facebook.share.model.AppInviteContent;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,41 +98,24 @@ public class AppInviteDialog
      * Helper to show the provided {@link com.facebook.share.model.AppInviteContent} using
      * the provided Fragment. No callback will be invoked.
      *
-     * @param fragment          android.support.v4.app.Fragment to use to share the provided content
+     * @param fragment          Fragment to use to share the provided content
      * @param appInviteContent Content of the app invite to send
      */
     public static void show(
             final Fragment fragment,
             final AppInviteContent appInviteContent) {
-        show(new FragmentWrapper(fragment), appInviteContent);
-    }
-
-    /**
-     * Helper to show the provided {@link com.facebook.share.model.AppInviteContent} using
-     * the provided Fragment. No callback will be invoked.
-     *
-     * @param fragment          android.app.Fragment to use to share the provided content
-     * @param appInviteContent Content of the app invite to send
-     */
-    public static void show(
-            final android.app.Fragment fragment,
-            final AppInviteContent appInviteContent) {
-        show(new FragmentWrapper(fragment), appInviteContent);
-    }
-
-    private static void show(
-            final FragmentWrapper fragmentWrapper,
-            final AppInviteContent appInviteContent) {
-        new AppInviteDialog(fragmentWrapper)
+        new AppInviteDialog(fragment)
                 .show(appInviteContent);
     }
 
     private static boolean canShowNativeDialog() {
-        return DialogPresenter.canPresentNativeDialogWithFeature(getFeature());
+        return (Build.VERSION.SDK_INT >= ShareConstants.MIN_API_VERSION_FOR_WEB_FALLBACK_DIALOGS) &&
+                DialogPresenter.canPresentNativeDialogWithFeature(getFeature());
     }
 
     private static boolean canShowWebFallback() {
-        return DialogPresenter.canPresentWebFallbackDialogWithFeature(getFeature());
+        return (Build.VERSION.SDK_INT >= ShareConstants.MIN_API_VERSION_FOR_WEB_FALLBACK_DIALOGS) &&
+                DialogPresenter.canPresentWebFallbackDialogWithFeature(getFeature());
     }
 
     /**
@@ -150,22 +130,9 @@ public class AppInviteDialog
     /**
      * Constructs a new AppInviteDialog.
      *
-     * @param fragment android.support.v4.app.Fragment to use to share the provided content.
+     * @param fragment Fragment to use to share the provided content.
      */
     public AppInviteDialog(final Fragment fragment) {
-        this(new FragmentWrapper(fragment));
-    }
-
-    /**
-     * Constructs a new AppInviteDialog.
-     *
-     * @param fragment android.app.Fragment to use to share the provided content.
-     */
-    public AppInviteDialog(final android.app.Fragment fragment) {
-        this(new FragmentWrapper(fragment));
-    }
-
-    private AppInviteDialog(final FragmentWrapper fragment) {
         super(fragment, DEFAULT_REQUEST_CODE);
     }
 
@@ -218,7 +185,7 @@ public class AppInviteDialog
 
     private class NativeHandler extends ModeHandler {
         @Override
-        public boolean canShow(AppInviteContent content, boolean isBestEffort) {
+        public boolean canShow(AppInviteContent content) {
             return AppInviteDialog.canShowNativeDialog();
         }
 
@@ -251,7 +218,7 @@ public class AppInviteDialog
 
     private class WebFallbackHandler extends ModeHandler {
         @Override
-        public boolean canShow(final AppInviteContent content, boolean isBestEffort) {
+        public boolean canShow(final AppInviteContent content) {
             return AppInviteDialog.canShowWebFallback();
         }
 
@@ -274,32 +241,9 @@ public class AppInviteDialog
 
     private static Bundle createParameters(final AppInviteContent content) {
         Bundle params = new Bundle();
+
         params.putString(ShareConstants.APPLINK_URL, content.getApplinkUrl());
         params.putString(ShareConstants.PREVIEW_IMAGE_URL, content.getPreviewImageUrl());
-        params.putString(
-                ShareConstants.DESTINATION,
-                content.getDestination().toString()
-        );
-
-        String promoCode = content.getPromotionCode();
-        promoCode = promoCode != null ? promoCode : "";
-        String promoText = content.getPromotionText();
-
-        if (!TextUtils.isEmpty(promoText)) {
-            // Encode deeplink context as json array.
-            try {
-                JSONObject deeplinkContent = new JSONObject();
-                deeplinkContent.put(ShareConstants.PROMO_CODE, promoCode);
-                deeplinkContent.put(ShareConstants.PROMO_TEXT, promoText);
-
-                params.putString(ShareConstants.DEEPLINK_CONTEXT, deeplinkContent.toString());
-                params.putString(ShareConstants.PROMO_CODE, promoCode);
-                params.putString(ShareConstants.PROMO_TEXT, promoText);
-            } catch (JSONException e) {
-                Log.e(TAG, "Json Exception in creating deeplink context");
-                // Ignore it since this is optional.
-            }
-        }
 
         return params;
     }

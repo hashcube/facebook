@@ -22,13 +22,12 @@ package com.facebook.share.widget;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 
-import com.facebook.AccessToken;
 import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
 import com.facebook.appevents.AppEventsLogger;
 import com.facebook.internal.AnalyticsEvents;
 import com.facebook.internal.AppCall;
@@ -36,8 +35,6 @@ import com.facebook.internal.CallbackManagerImpl;
 import com.facebook.internal.DialogFeature;
 import com.facebook.internal.DialogPresenter;
 import com.facebook.internal.FacebookDialogBase;
-import com.facebook.internal.FragmentWrapper;
-import com.facebook.internal.NativeAppCallAttachmentStore;
 import com.facebook.internal.Utility;
 import com.facebook.share.Sharer;
 import com.facebook.share.internal.LegacyNativeDialogParameters;
@@ -45,20 +42,12 @@ import com.facebook.share.internal.NativeDialogParameters;
 import com.facebook.share.internal.OpenGraphActionDialogFeature;
 import com.facebook.share.internal.ShareContentValidation;
 import com.facebook.share.internal.ShareDialogFeature;
-import com.facebook.share.internal.ShareFeedContent;
 import com.facebook.share.internal.ShareInternalUtility;
 import com.facebook.share.internal.WebDialogParameters;
-import com.facebook.share.model.ShareContent;
-import com.facebook.share.model.ShareLinkContent;
-import com.facebook.share.model.ShareMediaContent;
-import com.facebook.share.model.ShareOpenGraphContent;
-import com.facebook.share.model.SharePhoto;
-import com.facebook.share.model.SharePhotoContent;
-import com.facebook.share.model.ShareVideoContent;
+import com.facebook.share.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Provides functionality to share content via the Facebook Share Dialog
@@ -90,7 +79,7 @@ public final class ShareDialog
     }
 
     private static final String FEED_DIALOG = "feed";
-    public static final String WEB_SHARE_DIALOG = "share";
+    private static final String WEB_SHARE_DIALOG = "share";
     private static final String WEB_OG_SHARE_DIALOG = "share_open_graph";
 
     private static final int DEFAULT_REQUEST_CODE =
@@ -117,32 +106,13 @@ public final class ShareDialog
      * Helper to show the provided {@link com.facebook.share.model.ShareContent} using the provided
      * Fragment. No callback will be invoked.
      *
-     * @param fragment android.support.v4.app.Fragment to use to share the provided content
+     * @param fragment Fragment to use to share the provided content
      * @param shareContent Content to share
      */
     public static void show(
             final Fragment fragment,
             final ShareContent shareContent) {
-        show(new FragmentWrapper(fragment), shareContent);
-    }
-
-    /**
-     * Helper to show the provided {@link com.facebook.share.model.ShareContent} using the provided
-     * Fragment. No callback will be invoked.
-     *
-     * @param fragment android.app.Fragment to use to share the provided content
-     * @param shareContent Content to share
-     */
-    public static void show(
-            final android.app.Fragment fragment,
-            final ShareContent shareContent) {
-        show(new FragmentWrapper(fragment), shareContent);
-    }
-
-    private static void show(
-            final FragmentWrapper fragmentWrapper,
-            final ShareContent shareContent) {
-        new ShareDialog(fragmentWrapper).show(shareContent);
+        new ShareDialog(fragment).show(shareContent);
     }
 
     /**
@@ -169,14 +139,8 @@ public final class ShareDialog
         // The instance method version of this check is more accurate and should be used on
         // ShareDialog instances.
 
-        // SharePhotoContent currently requires the user staging endpoint, so we need a user access
-        // token, so we need to see if we have one
-        final AccessToken accessToken = AccessToken.getCurrentAccessToken();
-        final boolean haveUserAccessToken = accessToken != null && !accessToken.isExpired();
-
         return ShareLinkContent.class.isAssignableFrom(contentType)
-                || ShareOpenGraphContent.class.isAssignableFrom(contentType)
-                || (SharePhotoContent.class.isAssignableFrom(contentType) && haveUserAccessToken);
+                || ShareOpenGraphContent.class.isAssignableFrom(contentType);
     }
 
     /**
@@ -191,23 +155,10 @@ public final class ShareDialog
 
     /**
      * Constructs a new ShareDialog.
-     * @param fragment android.support.v4.app.Fragment to use to share the provided content.
+     * @param fragment Fragment to use to share the provided content.
      */
     public ShareDialog(Fragment fragment) {
-        this(new FragmentWrapper(fragment));
-
-    }
-
-    /**
-     * Constructs a new ShareDialog.
-     * @param fragment android.app.Fragment to use to share the provided content.
-     */
-    public ShareDialog(android.app.Fragment fragment) {
-        this(new FragmentWrapper(fragment));
-    }
-
-    private ShareDialog(FragmentWrapper fragmentWrapper) {
-        super(fragmentWrapper, DEFAULT_REQUEST_CODE);
+        super(fragment, DEFAULT_REQUEST_CODE);
 
         ShareInternalUtility.registerStaticShareCallback(DEFAULT_REQUEST_CODE);
     }
@@ -221,16 +172,7 @@ public final class ShareDialog
 
     // for ShareDialog use only
     ShareDialog(Fragment fragment, int requestCode) {
-        this(new FragmentWrapper(fragment), requestCode);
-
-    }
-
-    ShareDialog(android.app.Fragment fragment, int requestCode) {
-        this(new FragmentWrapper(fragment), requestCode);
-    }
-
-    private ShareDialog(FragmentWrapper fragmentWrapper, int requestCode) {
-        super(fragmentWrapper, requestCode);
+        super(fragment, requestCode);
 
         ShareInternalUtility.registerStaticShareCallback(requestCode);
     }
@@ -295,29 +237,8 @@ public final class ShareDialog
         }
 
         @Override
-        public boolean canShow(final ShareContent content, boolean isBestEffort) {
-            if (content == null) {
-                return false;
-            }
-
-            boolean canShowResult = true;
-            if (!isBestEffort) {
-                // The following features are considered best-effort and will not prevent the
-                // native share dialog from being presented, even if the installed version does
-                // not support the feature.
-                // However, to let apps pivot to a different approach or dialog (for example, Web),
-                // we need to be able to signal back when native support is lacking.
-                if (content.getShareHashtag() != null) {
-                    canShowResult = DialogPresenter.canPresentNativeDialogWithFeature(
-                            ShareDialogFeature.HASHTAG);
-                }
-                if ((content instanceof ShareLinkContent) &&
-                        (!Utility.isNullOrEmpty(((ShareLinkContent)content).getQuote()))) {
-                    canShowResult &= DialogPresenter.canPresentNativeDialogWithFeature(
-                            ShareDialogFeature.LINK_SHARE_QUOTES);
-                }
-            }
-            return canShowResult && ShareDialog.canShowNative(content.getClass());
+        public boolean canShow(final ShareContent content) {
+            return content != null && ShareDialog.canShowNative(content.getClass());
         }
 
         @Override
@@ -361,7 +282,7 @@ public final class ShareDialog
         }
 
         @Override
-        public boolean canShow(final ShareContent content, boolean isBestEffort) {
+        public boolean canShow(final ShareContent content) {
             return (content != null) && ShareDialog.canShowWebTypeCheck(content.getClass());
         }
 
@@ -376,10 +297,6 @@ public final class ShareDialog
             Bundle params;
             if (content instanceof ShareLinkContent) {
                 params = WebDialogParameters.create((ShareLinkContent)content);
-            } else if (content instanceof SharePhotoContent) {
-                final SharePhotoContent photoContent =
-                        createAndMapAttachments((SharePhotoContent)content, appCall.getCallId());
-                params = WebDialogParameters.create(photoContent);
             } else {
                 params = WebDialogParameters.create((ShareOpenGraphContent)content);
             }
@@ -393,43 +310,13 @@ public final class ShareDialog
         }
 
         private String getActionName(ShareContent shareContent) {
-            if (shareContent instanceof ShareLinkContent
-                    || shareContent instanceof SharePhotoContent) {
+            if (shareContent instanceof ShareLinkContent) {
                 return WEB_SHARE_DIALOG;
             } else if (shareContent instanceof ShareOpenGraphContent) {
                 return WEB_OG_SHARE_DIALOG;
             }
 
             return null;
-        }
-
-        private SharePhotoContent createAndMapAttachments(
-                final SharePhotoContent content,
-                final UUID callId) {
-            final SharePhotoContent.Builder contentBuilder =
-                    new SharePhotoContent.Builder().readFrom(content);
-            final List<SharePhoto> photos = new ArrayList<>();
-            final List<NativeAppCallAttachmentStore.Attachment> attachments = new ArrayList<>();
-            for (int i = 0; i < content.getPhotos().size(); i++) {
-                SharePhoto sharePhoto = content.getPhotos().get(i);
-                final Bitmap photoBitmap = sharePhoto.getBitmap();
-
-                if (photoBitmap != null) {
-                    NativeAppCallAttachmentStore.Attachment attachment =
-                            NativeAppCallAttachmentStore.createAttachment(callId, photoBitmap);
-                    sharePhoto = new SharePhoto.Builder()
-                            .readFrom(sharePhoto)
-                            .setImageUrl(Uri.parse(attachment.getAttachmentUrl()))
-                            .setBitmap(null)
-                            .build();
-                    attachments.add(attachment);
-                }
-
-                photos.add(sharePhoto);
-            }
-            contentBuilder.setPhotos(photos);
-            NativeAppCallAttachmentStore.addAttachments(attachments);
-            return contentBuilder.build();
         }
     }
 
@@ -440,29 +327,23 @@ public final class ShareDialog
         }
 
         @Override
-        public boolean canShow(final ShareContent content, boolean isBestEffort) {
-            return (content instanceof ShareLinkContent)
-                    || (content instanceof ShareFeedContent);
+        public boolean canShow(final ShareContent content) {
+            return (content instanceof ShareLinkContent);
         }
 
         @Override
         public AppCall createAppCall(final ShareContent content) {
             logDialogShare(getActivityContext(), content, Mode.FEED);
-            AppCall appCall = createBaseAppCall();
-            Bundle params;
-            if (content instanceof ShareLinkContent) {
-                ShareLinkContent linkContent = (ShareLinkContent)content;
-                ShareContentValidation.validateForWebShare(linkContent);
-                params = WebDialogParameters.createForFeed(linkContent);
-            } else {
-                ShareFeedContent feedContent = (ShareFeedContent)content;
-                params = WebDialogParameters.createForFeed(feedContent);
-            }
+
+            final ShareLinkContent linkContent = (ShareLinkContent)content;
+            final AppCall appCall = createBaseAppCall();
+
+            ShareContentValidation.validateForWebShare(linkContent);
 
             DialogPresenter.setupAppCallForWebDialog(
                     appCall,
                     FEED_DIALOG,
-                    params);
+                    WebDialogParameters.createForFeed(linkContent));
 
             return appCall;
         }
@@ -478,8 +359,6 @@ public final class ShareDialog
             return ShareDialogFeature.VIDEO;
         } else if (ShareOpenGraphContent.class.isAssignableFrom(contentType)) {
             return OpenGraphActionDialogFeature.OG_ACTION_DIALOG;
-        } else if (ShareMediaContent.class.isAssignableFrom(contentType)) {
-            return ShareDialogFeature.MULTIMEDIA;
         }
         return null;
     }

@@ -25,6 +25,7 @@ import android.content.*;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -35,9 +36,9 @@ import com.facebook.internal.AppCall;
 import com.facebook.internal.BundleJSONConverter;
 import com.facebook.internal.CallbackManagerImpl;
 import com.facebook.internal.FileLruCache;
-import com.facebook.internal.FragmentWrapper;
 import com.facebook.internal.Logger;
 import com.facebook.internal.NativeProtocol;
+import com.facebook.internal.ServerProtocol;
 import com.facebook.internal.Utility;
 import com.facebook.internal.WorkQueue;
 import com.facebook.share.widget.LikeView;
@@ -218,6 +219,24 @@ public class LikeActionController {
             diskIOWorkQueue.addActiveWorkItem(
                     new CreateLikeActionControllerWorkItem(objectId, objectType, callback));
         }
+    }
+
+    private static boolean canLike(LikeView.ObjectType objectType) {
+        if (LikeDialog.canShowNativeDialog() || LikeDialog.canShowWebFallback()) {
+            return true;
+        }
+        if (objectType == LikeView.ObjectType.PAGE) {
+            // If we can't use the dialogs, then we can't like Pages.
+            return false;
+        }
+
+        // See if we have publish permissions.
+        // NOTE: This will NOT be accurate if the app has the type set as UNKNOWN, and the
+        // underlying object is a page.
+        AccessToken token = AccessToken.getCurrentAccessToken();
+        return token != null
+                && token.getPermissions() != null
+                && token.getPermissions().contains("publish_actions");
     }
 
     private static void verifyControllerAndInvokeCallback(
@@ -639,38 +658,23 @@ public class LikeActionController {
     }
 
     /**
-     * Indicates whether the LikeView should enable itself.
+     * Indicates whether the LikeView should disable itself.
      *
-     * @return Indication of whether the LikeView should enable itself.
+     * @return Indication of whether the LikeView should disable itself.
      */
-    public boolean shouldEnableView() {
-        if (LikeDialog.canShowNativeDialog() || LikeDialog.canShowWebFallback()) {
-            return true;
-        }
-        if (objectIsPage || (objectType == LikeView.ObjectType.PAGE)) {
-            // If we can't use the dialogs, then we can't like Pages.
-            // Before any requests are made to the server, we have to rely on the object type set
-            // by the app. If we have permissions to make requests, we will know the real type after
-            // the first request.
-            return false;
-        }
-
-        // See if we have publish permissions.
-        // NOTE: This will NOT be accurate if the app has the type set as UNKNOWN, and the
-        // underlying object is a page.
-        AccessToken token = AccessToken.getCurrentAccessToken();
-        return token != null
-                && token.getPermissions() != null
-                && token.getPermissions().contains("publish_actions");
+    public boolean shouldDisableView() {
+        return !LikeActionController.canLike(objectType);
     }
 
     /**
      * Entry-point to the code that performs the like/unlike action.
      */
-    public void toggleLike(
-            Activity activity,
-            FragmentWrapper fragment,
-            Bundle analyticsParameters) {
+    public void toggleLike(Activity activity, Fragment fragment, Bundle analyticsParameters) {
+        getAppEventsLogger().logSdkEvent(
+                AnalyticsEvents.EVENT_LIKE_VIEW_DID_TAP,
+                null,
+                analyticsParameters);
+
         boolean shouldLikeObject = !this.isObjectLiked;
 
         if (canUseOGPublish()) {
@@ -792,7 +796,7 @@ public class LikeActionController {
 
     private void presentLikeDialog(
             final Activity activity,
-            final FragmentWrapper fragmentWrapper,
+            final Fragment fragment,
             final Bundle analyticsParameters) {
         String analyticsEvent = null;
 
@@ -804,25 +808,18 @@ public class LikeActionController {
             // We will get here if the user tapped the button when dialogs cannot be shown.
             logAppEventForError("present_dialog", analyticsParameters);
             Utility.logd(TAG, "Cannot show the Like Dialog on this device.");
-
-            // If we got to this point, we should ask the views to check if they should now
-            // be disabled.
-            broadcastAction(null, ACTION_LIKE_ACTION_CONTROLLER_UPDATED);
         }
 
         // Using the value of analyticsEvent to see if we can show any version of the dialog.
         // Written this way just to prevent extra lines of code.
         if (analyticsEvent != null) {
-            String objectTypeString = (this.objectType != null)
-                    ? this.objectType.toString()
-                    : LikeView.ObjectType.UNKNOWN.toString();
             LikeContent likeContent = new LikeContent.Builder()
                     .setObjectId(this.objectId)
-                    .setObjectType(objectTypeString)
+                    .setObjectType(this.objectType)
                     .build();
 
-            if (fragmentWrapper != null) {
-                new LikeDialog(fragmentWrapper).show(likeContent);
+            if (fragment != null) {
+                new LikeDialog(fragment).show(likeContent);
             } else {
                 new LikeDialog(activity).show(likeContent);
             }
@@ -1005,7 +1002,7 @@ public class LikeActionController {
                     public void onBatchCompleted(GraphRequestBatch batch) {
                         isPendingLikeOrUnlike = false;
 
-                        if (likeRequest.getError() != null) {
+                        if (likeRequest.error != null) {
                             // We already updated the UI to show button in the Liked state. Since
                             // this failed, let's revert back to the Unliked state and broadcast
                             // an error
@@ -1045,7 +1042,7 @@ public class LikeActionController {
             public void onBatchCompleted(GraphRequestBatch batch) {
                 isPendingLikeOrUnlike = false;
 
-                if (unlikeRequest.getError() != null) {
+                if (unlikeRequest.error != null) {
                     // We already updated the UI to show button in the Unliked state. Since this
                     // failed, let's revert back to the Liked state and broadcast an error.
                     publishDidError(true);
@@ -1081,28 +1078,20 @@ public class LikeActionController {
         fetchVerifiedObjectId(new RequestCompletionCallback() {
             @Override
             public void onComplete() {
-                final LikeRequestWrapper likeRequestWrapper;
-                switch (objectType) {
-                    case PAGE:
-                        likeRequestWrapper = new GetPageLikesRequestWrapper(verifiedObjectId);
-                        break;
-                    default:
-                        likeRequestWrapper =
-                                new GetOGObjectLikesRequestWrapper(verifiedObjectId, objectType);
-                        break;
-                }
+                final GetOGObjectLikesRequestWrapper objectLikesRequest =
+                        new GetOGObjectLikesRequestWrapper(verifiedObjectId, objectType);
                 final GetEngagementRequestWrapper engagementRequest =
                         new GetEngagementRequestWrapper(verifiedObjectId, objectType);
 
                 GraphRequestBatch requestBatch = new GraphRequestBatch();
-                likeRequestWrapper.addToBatch(requestBatch);
+                objectLikesRequest.addToBatch(requestBatch);
                 engagementRequest.addToBatch(requestBatch);
 
                 requestBatch.addCallback(new GraphRequestBatch.Callback() {
                     @Override
                     public void onBatchCompleted(GraphRequestBatch batch) {
-                        if (likeRequestWrapper.getError() != null ||
-                                engagementRequest.getError() != null) {
+                        if (objectLikesRequest.error != null ||
+                                engagementRequest.error != null) {
                             // Refreshing is best-effort. If the refresh fails, don't lose old
                             // state.
                             Logger.log(
@@ -1113,12 +1102,12 @@ public class LikeActionController {
                         }
 
                         updateState(
-                                likeRequestWrapper.isObjectLiked(),
+                                objectLikesRequest.objectIsLiked,
                                 engagementRequest.likeCountStringWithLike,
                                 engagementRequest.likeCountStringWithoutLike,
                                 engagementRequest.socialSentenceStringWithLike,
                                 engagementRequest.socialSentenceStringWithoutLike,
-                                likeRequestWrapper.getUnlikeToken());
+                                objectLikesRequest.unlikeToken);
                     }
                 });
 
@@ -1229,9 +1218,9 @@ public class LikeActionController {
                                     " object or page",
                             objectId);
                     logAppEventForError("get_verified_id",
-                            pageIdRequest.getError() != null
-                                    ? pageIdRequest.getError()
-                                    : objectIdRequest.getError());
+                            pageIdRequest.error != null
+                                    ? pageIdRequest.error
+                                    : objectIdRequest.error);
                 }
 
                 if (completionHandler != null) {
@@ -1447,81 +1436,18 @@ public class LikeActionController {
         }
     }
 
-    private interface LikeRequestWrapper extends RequestWrapper {
-        boolean isObjectLiked();
-        String getUnlikeToken();
-    }
-
-    private class GetPageLikesRequestWrapper
-            extends AbstractRequestWrapper
-            implements LikeRequestWrapper {
-        private boolean objectIsLiked = LikeActionController.this.isObjectLiked;
-        private String pageId;
-
-        GetPageLikesRequestWrapper(String pageId) {
-            super(pageId, LikeView.ObjectType.PAGE);
-            this.pageId = pageId;
-
-            Bundle requestParams = new Bundle();
-            requestParams.putString("fields", "id");
-
-            setRequest(new GraphRequest(
-                    AccessToken.getCurrentAccessToken(),
-                    "me/likes/" + pageId,
-                    requestParams,
-                    HttpMethod.GET));
-        }
-
-        @Override
-        protected void processSuccess(GraphResponse response) {
-            JSONArray dataSet = Utility.tryGetJSONArrayFromResponse(
-                    response.getJSONObject(),
-                    "data");
-            if (dataSet != null && dataSet.length() > 0) {
-                objectIsLiked = true;
-            }
-        }
-
-        @Override
-        protected void processError(FacebookRequestError error) {
-            Logger.log(LoggingBehavior.REQUESTS,
-                    TAG,
-                    "Error fetching like status for page id '%s': %s",
-                    this.pageId,
-                    error);
-            logAppEventForError("get_page_like", error);
-        }
-
-
-        @Override
-        public boolean isObjectLiked() {
-            return this.objectIsLiked;
-        }
-
-        @Override
-        public String getUnlikeToken() {
-            return null;
-        }
-    }
-
-    private class GetOGObjectLikesRequestWrapper
-            extends AbstractRequestWrapper
-            implements LikeRequestWrapper {
+    private class GetOGObjectLikesRequestWrapper extends AbstractRequestWrapper {
         // Initialize the like status to what we currently have. This way, empty/error responses
         // don't end up clearing out the state.
-        private boolean objectIsLiked = LikeActionController.this.isObjectLiked;
-        private String unlikeToken;
-        private final String objectId;
-        private final LikeView.ObjectType objectType;
+        boolean objectIsLiked = LikeActionController.this.isObjectLiked;
+        String unlikeToken;
 
         GetOGObjectLikesRequestWrapper(String objectId, LikeView.ObjectType objectType) {
             super(objectId, objectType);
-            this.objectId = objectId;
-            this.objectType = objectType;
 
             Bundle requestParams = new Bundle();
             requestParams.putString("fields", "id,application");
-            requestParams.putString("object", this.objectId);
+            requestParams.putString("object", objectId);
 
             setRequest(new GraphRequest(
                     AccessToken.getCurrentAccessToken(),
@@ -1559,20 +1485,10 @@ public class LikeActionController {
             Logger.log(LoggingBehavior.REQUESTS,
                     TAG,
                     "Error fetching like status for object '%s' with type '%s' : %s",
-                    this.objectId,
-                    this.objectType,
+                    objectId,
+                    objectType,
                     error);
             logAppEventForError("get_og_object_like", error);
-        }
-
-        @Override
-        public boolean isObjectLiked() {
-            return this.objectIsLiked;
-        }
-
-        @Override
-        public String getUnlikeToken() {
-            return this.unlikeToken;
         }
     }
 
@@ -1596,9 +1512,6 @@ public class LikeActionController {
                             "count_string_without_like," +
                             "social_sentence_with_like," +
                             "social_sentence_without_like)");
-
-            // Ensure that the social sentence returned is localized
-            requestParams.putString("locale", Locale.getDefault().toString());
 
             setRequest(new GraphRequest(
                     AccessToken.getCurrentAccessToken(),
@@ -1648,35 +1561,27 @@ public class LikeActionController {
         }
     }
 
-    private interface RequestWrapper {
-        FacebookRequestError getError();
-        void addToBatch(GraphRequestBatch batch);
-    }
-
-    private abstract class AbstractRequestWrapper implements RequestWrapper{
+    private abstract class AbstractRequestWrapper {
         private GraphRequest request;
         protected String objectId;
         protected LikeView.ObjectType objectType;
-        protected FacebookRequestError error;
+
+        FacebookRequestError error;
 
         protected AbstractRequestWrapper(String objectId, LikeView.ObjectType objectType) {
             this.objectId = objectId;
             this.objectType = objectType;
         }
 
-        public void addToBatch(GraphRequestBatch batch) {
+        void addToBatch(GraphRequestBatch batch) {
             batch.add(request);
-        }
-
-        public FacebookRequestError getError() {
-            return this.error;
         }
 
         protected void setRequest(GraphRequest request) {
             this.request = request;
             // Make sure that our requests are hitting the latest version of the API known to this
             // sdk.
-            request.setVersion(FacebookSdk.getGraphApiVersion());
+            request.setVersion(ServerProtocol.GRAPH_API_VERSION);
             request.setCallback(new GraphRequest.Callback() {
                 @Override
                 public void onCompleted(GraphResponse response) {
@@ -1694,8 +1599,8 @@ public class LikeActionController {
             Logger.log(LoggingBehavior.REQUESTS,
                     TAG,
                     "Error running request for object '%s' with type '%s' : %s",
-                    this.objectId,
-                    this.objectType,
+                    objectId,
+                    objectType,
                     error);
         }
 

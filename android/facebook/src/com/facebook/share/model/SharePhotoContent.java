@@ -23,6 +23,8 @@ package com.facebook.share.model;
 import android.os.Parcel;
 import android.support.annotation.Nullable;
 
+import com.facebook.share.internal.ShareConstants;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,8 +45,7 @@ public final class SharePhotoContent
 
     SharePhotoContent(final Parcel in) {
         super(in);
-
-        this.photos = Collections.unmodifiableList(SharePhoto.Builder.readPhotoListFrom(in));
+        this.photos = Collections.unmodifiableList(SharePhoto.Builder.readListFrom(in));
     }
 
     /**
@@ -62,7 +63,7 @@ public final class SharePhotoContent
 
     public void writeToParcel(final Parcel out, final int flags) {
         super.writeToParcel(out, flags);
-        SharePhoto.Builder.writePhotoListTo(out, flags, this.photos);
+        SharePhoto.Builder.writeListTo(out, this.photos);
     }
 
     @SuppressWarnings("unused")
@@ -122,6 +123,13 @@ public final class SharePhotoContent
             return super.
                     readFrom(model)
                     .addPhotos(model.getPhotos());
+        }
+
+        @Override
+        public Builder readFrom(final Parcel parcel) {
+            return this.readFrom(
+                    (SharePhotoContent) parcel.readParcelable(
+                            SharePhotoContent.class.getClassLoader()));
         }
 
         /**
