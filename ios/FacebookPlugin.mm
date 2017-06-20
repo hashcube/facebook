@@ -440,6 +440,10 @@
                      [@"com.facebook.sdk:FBSDKGraphRequestErrorParsedJSONResponseKey"]
                      [@"body"]
                      [@"error"] mutableCopy];
+    
+    if (userInfo[@"NSLocalizedDescription"]) {
+        res[@"error"] = userInfo[@"NSLocalizedDescription"];
+    }
 
     if (userInfo[@"com.facebook.sdk:FBSDKErrorLocalizedDescriptionKey"]) {
         res[@"error"][@"error_user_message"] = userInfo[@"com.facebook.sdk:FBSDKErrorLocalizedDescriptionKey"];
