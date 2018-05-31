@@ -214,6 +214,8 @@ final class AccessTokenManager {
                 } catch (RemoteException e) {
                     cleanup();
                 }
+            } else {
+                cleanup();
             }
         }
     }
