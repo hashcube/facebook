@@ -200,16 +200,21 @@ final class AccessTokenManager {
         }
 
         private void refreshToken() {
-            Bundle requestData = new Bundle();
-            requestData.putString(AccessToken.ACCESS_TOKEN_KEY, getCurrentAccessToken().getToken());
+            AccessToken accessToken = getCurrentAccessToken();
+            if (accessToken != null) {
+                Bundle requestData = new Bundle();
+                requestData.putString(AccessToken.ACCESS_TOKEN_KEY, accessToken.getToken());
 
-            Message request = Message.obtain();
-            request.setData(requestData);
-            request.replyTo = messageReceiver;
+                Message request = Message.obtain();
+                request.setData(requestData);
+                request.replyTo = messageReceiver;
 
-            try {
-                messageSender.send(request);
-            } catch (RemoteException e) {
+                try {
+                    messageSender.send(request);
+                } catch (RemoteException e) {
+                    cleanup();
+                }
+            } else {
                 cleanup();
             }
         }
