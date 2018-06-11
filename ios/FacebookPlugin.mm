@@ -172,10 +172,15 @@
 }
 
 - (void)sharer:(id<FBSDKSharing>)sharer didCompleteWithResults:(NSDictionary *)results {
+    @try {
     NSLOG(@"{facebook} %@", results);
     
     [[PluginManager get] dispatchJSResponse: @{@"success": @true, @"id": results[@"postId"]}
                                   withError:nil andRequestId:[self requestId]];
+    }
+    @catch (NSException *exception) {
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
+    }
 }
 
 - (void)sharer:(id<FBSDKSharing>)sharer didFailWithError:(NSError *)error {
