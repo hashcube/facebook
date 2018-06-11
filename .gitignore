@@ -29,7 +29,7 @@ android/facebook/idea
 .DS_Store
 android/facebook/DS_Store
 android/facebook/facebook/build
-!android/facebook/facebook/build/outputs/aar
+!./android/facebook/facebook/build/outputs/aar
 
 
 
