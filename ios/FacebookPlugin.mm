@@ -274,9 +274,7 @@
         return content;
     } else if ([params objectForKey:@"href"]) {
         FBSDKShareLinkContent *content = [[FBSDKShareLinkContent alloc] init];
-        content.contentURL = [params objectForKey:@"href"];
-        NSString *stringPictureUrl = [params objectForKey:@"picture"];
-        NSURL *pictureURL = [NSURL URLWithString:stringPictureUrl];
+        content.contentURL = [NSURL URLWithString:[params objectForKey:@"href"]];
         return content;
     }
 
