@@ -6,6 +6,7 @@
 		"facebook"
     ],
     "jars": [
+    "facebook/facebook/build/outputs/aar/facebook-debug.aar"
     ],
     "injectionXML": "manifest.xml",
 	"injectionXSL": "manifest.xsl"
