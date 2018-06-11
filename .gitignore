@@ -22,7 +22,7 @@ local.properties
 
 
 *.iml
-android/facebook/gradle
+android/facebook/.gradle
 android/facebook/local.properties
 
 android/facebook/idea
