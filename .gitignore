@@ -22,7 +22,7 @@ local.properties
 
 
 *.iml
-.gradle
+android/facebook/gradle
 android/facebook/local.properties
 
 android/facebook/idea
@@ -31,4 +31,6 @@ android/facebook/DS_Store
 android/facebook/facebook/build
 !android/facebook/facebook/build/outputs/aar/facebook-debug.aar
 !android/facebook/facebook/build/outputs/aar/facebook-release.aar
+
+
 
