@@ -28,7 +28,7 @@ android/facebook/local.properties
 android/facebook/idea
 .DS_Store
 android/facebook/DS_Store
-android/facebook/build
+android/facebook/facebook/build
 !android/facebook/facebook/build/outputs/aar/facebook-debug.aar
 !android/facebook/facebook/build/outputs/aar/facebook-release.aar
 
