@@ -2,9 +2,6 @@
     "copyFiles": [
         "FacebookPlugin.java"
     ],
-    "libraries": [
-		"facebook"
-    ],
     "jars": [
     "facebook/facebook/build/outputs/aar/facebook-debug.aar"
     ],
