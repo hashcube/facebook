@@ -21,8 +21,11 @@ local.properties
 *.iml
 android/facebook/.gradle
 android/facebook/local.properties
+android/facebook/.idea
+android/facebook/build/android-profile
+android/freshchat_sdk/captures
 
-android/facebook/idea
+android/facebook/.idea
 .DS_Store
 android/facebook/DS_Store
 
@@ -32,5 +35,6 @@ android/facebook/facebook/build/*
 android/facebook/facebook/build/outputs/*
 !android/facebook/facebook/build/outputs/aar/
 
+android/facebook/build/android-profile
 
 
