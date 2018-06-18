@@ -29,11 +29,11 @@ android/freshchat_sdk/captures
 .DS_Store
 android/facebook/DS_Store
 
-!android/facebook/facebook/build
-android/facebook/facebook/build/*
-!android/facebook/facebook/build/outputs
-android/facebook/facebook/build/outputs/*
-!android/facebook/facebook/build/outputs/aar/
+!/android/facebook/facebook/build
+/android/facebook/facebook/build/*
+!/android/facebook/facebook/build/outputs
+/android/facebook/facebook/build/outputs/*
+!/android/facebook/facebook/build/outputs/aar
 
 android/facebook/build/android-profile
 
