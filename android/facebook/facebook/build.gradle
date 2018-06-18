@@ -7,8 +7,8 @@ repositories {
 project.group = 'com.facebook.android'
 
 dependencies {
-    implementation 'com.android.support:support-v4:[21,22)'
-    implementation 'com.android.support:support-annotations:[21,22)'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support:support-annotations:27.1.1'
     implementation 'com.parse.bolts:bolts-android:1.1.4'
 }
 

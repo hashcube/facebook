@@ -22,10 +22,10 @@ local.properties
 android/facebook/.gradle
 android/facebook/local.properties
 android/facebook/.idea
+android/facebook/.idea/
 android/facebook/build/android-profile
 android/freshchat_sdk/captures
 
-android/facebook/.idea
 .DS_Store
 android/facebook/DS_Store
 
