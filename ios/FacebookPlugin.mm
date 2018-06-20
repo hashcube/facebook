@@ -172,10 +172,15 @@
 }
 
 - (void)sharer:(id<FBSDKSharing>)sharer didCompleteWithResults:(NSDictionary *)results {
+    @try {
     NSLOG(@"{facebook} %@", results);
     
     [[PluginManager get] dispatchJSResponse: @{@"success": @true, @"id": results[@"postId"]}
                                   withError:nil andRequestId:[self requestId]];
+    }
+    @catch (NSException *exception) {
+        NSLog(@"{facebook} Resp Failure to get: %@", exception);
+    }
 }
 
 - (void)sharer:(id<FBSDKSharing>)sharer didFailWithError:(NSError *)error {
@@ -274,12 +279,7 @@
         return content;
     } else if ([params objectForKey:@"href"]) {
         FBSDKShareLinkContent *content = [[FBSDKShareLinkContent alloc] init];
-        content.contentURL = [params objectForKey:@"href"];
-        content.contentTitle = [params objectForKey:@"title"];
-        content.contentDescription = [params objectForKey:@"description"];
-        NSString *stringPictureUrl = [params objectForKey:@"picture"];
-        NSURL *pictureURL = [NSURL URLWithString:stringPictureUrl];
-        content.imageURL = pictureURL;
+        content.contentURL = [NSURL URLWithString:[params objectForKey:@"href"]];
         return content;
     }
 
