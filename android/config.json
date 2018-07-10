@@ -3,8 +3,9 @@
         "FacebookPlugin.java"
     ],
     "jars": [
-    "facebook/facebook/build/outputs/aar/facebook-debug.aar"
+    "facebook-android-sdk/facebook/build/outputs/aar/facebook-debug.aar"
     ],
     "injectionXML": "manifest.xml",
-	"injectionXSL": "manifest.xsl"
+	"injectionXSL": "manifest.xsl",
+	"injectionTealeafModuleGradleXML": "gradletealeaf.xml"
 }

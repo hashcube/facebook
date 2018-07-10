@@ -17,24 +17,61 @@ node_modules
 
 local.properties
 
+# Gradle
+.gradle
 
+
+# Intellij project files
 *.iml
-android/facebook/.gradle
-android/facebook/local.properties
-android/facebook/.idea
-android/facebook/.idea/
-android/facebook/build/android-profile
-android/freshchat_sdk/captures
+*.ipr
+*.iws
+.idea/
+
+android/facebook-android-sdk/.gradle
+android/facebook-android-sdk/local.properties
+android/facebook-android-sdk/.idea
+android/facebook-android-sdk/.idea/
+android/facebook-android-sdk/build/android-profile
+android/facebook-android-sdk/captures
 
 .DS_Store
-android/facebook/DS_Store
+android/facebook-android-sdk/DS_Store
 
-!/android/facebook/facebook/build
-/android/facebook/facebook/build/*
-!/android/facebook/facebook/build/outputs
-/android/facebook/facebook/build/outputs/*
-!/android/facebook/facebook/build/outputs/aar
+!/android/facebook-android-sdk/facebook/build
+/android/facebook-android-sdk/facebook/build/*
+!/android/facebook-android-sdk/facebook/build/outputs
+/android/facebook-android-sdk/facebook/build/outputs/*
+!/android/facebook-android-sdk/facebook/build/outputs/aar
 
-android/facebook/build/android-profile
+android/facebook-android-sdk/build/android-profile
+
+android/facebook-android-sdk/facebook-commond/build
+android/facebook-android-sdk/facebook-core/build
+android/facebook-android-sdk/facebook-share/build
+
+# Buck
+BUCK*
+.buckconfig
+.buckversion
+keystores/
+/buck-cache/
+/buck-out/
+/.buckconfig.local
+/.buckd
+/.nobuckcheck
+/.bucktestselectors
+
+# vim temp files
+*.swp
+
+*~
+*.DS_Store
+*java#
+*.settings
+out/
+android/facebook-android-sdk/facebook/doc/
+android/facebook-android-sdk/facebook/tests/lint.xml
+android/facebook-android-sdk/facebook/src/androidTest/assets/config.json
+android/facebook-android-sdk/gradle-app.setting
 
 
