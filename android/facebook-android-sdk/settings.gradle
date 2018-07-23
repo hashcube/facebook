@@ -1,0 +1,16 @@
+// Facebook SDK
+include ':facebook-core'
+include ':facebook-common', ':facebook-share'
+//, ':facebook-login', ':facebook-places', ':facebook-applinks', ':facebook-messenger'
+
+
+
+include ':facebook'
+
+if (file('internal/internal-settings.gradle').exists()) {
+    apply from: 'internal/internal-settings.gradle'
+}
+
+if (file('local.gradle').exists()) {
+    apply from: 'local.gradle'
+}

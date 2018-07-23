@@ -8,19 +8,19 @@
 	<xsl:template match="comment()" />
 
 	<xsl:template match="meta-data[@android:name='FACEBOOK_APP_ID']">
-		<meta-data android:name="FACEBOOK_APP_ID" android:value="\ {$facebook.facebookAppID}"/>
+		<meta-data android:name="FACEBOOK_APP_ID" android:value="{$facebook.facebookAppID}"/>
 	</xsl:template>
 
 	<xsl:template match="meta-data[@android:name='FACEBOOK_DISPLAY_NAME']">
-		<meta-data android:name="FACEBOOK_DISPLAY_NAME" android:value="{$facebook.facebookDisplayName}"/>
+		<meta-data android:name="FACEBOOK_DISPLAY_NAME" android:value="\ {$facebook.facebookDisplayName}"/>
 	</xsl:template>
 
 	<xsl:template match="meta-data[@android:name='com.facebook.sdk.ApplicationId']">
-		<meta-data android:name="com.facebook.sdk.ApplicationId" android:value="\ {$facebook.facebookAppID}"/>
+		<meta-data android:name="com.facebook.sdk.ApplicationId" android:value="\{$facebook.facebookAppID}"/>
 	</xsl:template>
 
 	<xsl:template match="meta-data[@android:name='com.facebook.sdk.ApplicationName']">
-		<meta-data android:name="com.facebook.sdk.ApplicationName" android:value="\ {$facebook.facebookDisplayName}"/>
+		<meta-data android:name="com.facebook.sdk.ApplicationName" android:value="{$facebook.facebookDisplayName}"/>
 	</xsl:template>
 
 	<xsl:template match="activity[@android:name='com.facebook.LoginActivity']">

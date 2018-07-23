@@ -4,7 +4,7 @@
     <!--Facebook-->
     <meta-data android:name="FACEBOOK_APP_ID" android:value="" />
     <meta-data android:name="FACEBOOK_DISPLAY_NAME" android:value="" />
-    <activity android:name="com.facebook.FacebookActivity"
+    <activity tools:replace="android:theme" android:name="com.facebook.FacebookActivity"
         android:theme="@android:style/Theme.Translucent.NoTitleBar"
         android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
         android:label="@string/app_name" />
