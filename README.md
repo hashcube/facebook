@@ -89,3 +89,7 @@ There are some great videos about App Events from the F8 conference:
 
 [facebook_js]: https://developers.facebook.com/docs/javascript/reference/v2.3
 [user_feed_docs]: https://developers.facebook.com/docs/graph-api/reference/v2.3/user/feed/
+
+### Modification and update
+This project contains build.gradle files.
+Please note that plugins library projects are not imported as project modules, instead they are imported as AAR (Android archive) which contain necessary source code and resources. You can see this in android/config.json of each library project plugin This requires to rebuild .aar file after plugin source code has been modified with proces: Import project into Android Studio -> Add changes -> Build -> Rebuild project. This will rebuild .aar file, the path to which is already in config.json.
