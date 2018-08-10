@@ -6,6 +6,5 @@
         "FacebookSDK400/facebook/build/outputs/aar/facebook-debug.aar"
     ],
     "injectionXML": "manifest.xml",
-    "injectionXSL": "manifest.xsl",
-    "injectionTealeafModuleGradleXML": "gradletealeaf.xml"
+    "injectionXSL": "manifest.xsl"
 }

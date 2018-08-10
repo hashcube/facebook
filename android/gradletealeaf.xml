@@ -1,9 +1,0 @@
-//<!--START_PLUGINS_DEPENDENCIES-->
-	//<!--Facebook Dependencies-->
-    implementation 'com.facebook.android:facebook-core:4.34.0'
-    implementation 'com.facebook.android:facebook-login:4.34.0'
-    implementation 'com.facebook.android:facebook-places:4.34.0'
-    implementation 'com.facebook.android:facebook-messenger:4.34.0'
-    implementation 'com.facebook.android:facebook-applinks:4.34.0'
-    implementation 'com.facebook.android:facebook-marketing:4.34.0'
-//<!--END_PLUGINS_DEPENDENCIES-->
