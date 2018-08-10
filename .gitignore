@@ -27,27 +27,28 @@ local.properties
 *.iws
 .idea/
 
-android/facebook-android-sdk/.gradle
-android/facebook-android-sdk/local.properties
-android/facebook-android-sdk/.idea
-android/facebook-android-sdk/.idea/
-android/facebook-android-sdk/build/android-profile
-android/facebook-android-sdk/captures
+android/FacebookSDK400/.gradle
+android/FacebookSDK400/local.properties
+android/FacebookSDK400/.idea
+android/FacebookSDK400/.idea/
+android/FacebookSDK400/build/android-profile
+android/FacebookSDK400/captures
 
 .DS_Store
-android/facebook-android-sdk/DS_Store
+android/FacebookSDK400/DS_Store
 
-!/android/facebook-android-sdk/facebook/build
-/android/facebook-android-sdk/facebook/build/*
-!/android/facebook-android-sdk/facebook/build/outputs
-/android/facebook-android-sdk/facebook/build/outputs/*
-!/android/facebook-android-sdk/facebook/build/outputs/aar
+!/android/FacebookSDK400/facebook/build
+/android/FacebookSDK400/facebook/build/*
+!/android/FacebookSDK400/facebook/build/outputs
+/android/FacebookSDK400/facebook/build/outputs/*
+!/android/FacebookSDK400/facebook/build/outputs/aar
 
-android/facebook-android-sdk/build/android-profile
+android/FacebookSDK400/build/android-profile
 
-android/facebook-android-sdk/facebook-commond/build
-android/facebook-android-sdk/facebook-core/build
-android/facebook-android-sdk/facebook-share/build
+#For Facebook SDK 4.3+ versions
+android/FacebookSDK400/facebook-commond/build
+android/FacebookSDK400/facebook-core/build
+android/FacebookSDK400/facebook-share/build
 
 # Buck
 BUCK*
@@ -69,9 +70,9 @@ keystores/
 *java#
 *.settings
 out/
-android/facebook-android-sdk/facebook/doc/
-android/facebook-android-sdk/facebook/tests/lint.xml
-android/facebook-android-sdk/facebook/src/androidTest/assets/config.json
-android/facebook-android-sdk/gradle-app.setting
+android/FacebookSDK400/facebook/doc/
+android/FacebookSDK400/facebook/tests/lint.xml
+android/FacebookSDK400/facebook/src/androidTest/assets/config.json
+android/FacebookSDK400/gradle-app.setting
 
 
