@@ -70,6 +70,7 @@ keystores/
 *java#
 *.settings
 out/
+
 android/FacebookSDK400/facebook/doc/
 android/FacebookSDK400/facebook/tests/lint.xml
 android/FacebookSDK400/facebook/src/androidTest/assets/config.json
