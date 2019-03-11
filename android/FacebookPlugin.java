@@ -951,7 +951,19 @@ public class FacebookPlugin implements IPlugin {
       requestDialog.registerCallback(callbackManager, new FacebookCallback<GameRequestDialog.Result>() {
           public void onSuccess(GameRequestDialog.Result result) {
               log("{facebook} game request result - success");
-              sendResponse(result.getRequestRecipients(), null, activeRequest);
+              JSONObject response = new JSONObject();
+              List<String> recipients = result.getRequestRecipients();
+
+              try {
+                for (int i = 0; i < recipients.size(); i++) {
+                    response.put("to[" + i + "]", recipients.get(i));
+                }
+                response.put("request", result.getRequestId());
+              } catch (JSONException ex) {
+                log("{facebook} exception occured while reading reciepients");
+              }
+
+              sendResponse(response, null, activeRequest);
           }
           public void onCancel() {
               log("{facebook} game request result - cancel");
