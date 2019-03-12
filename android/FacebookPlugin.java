@@ -50,9 +50,6 @@ import com.facebook.FacebookServiceException;
 import com.facebook.login.*;
 import com.facebook.share.model.*;
 import com.facebook.share.widget.*;
-import com.facebook.messenger.MessengerUtils;
-import com.facebook.messenger.MessengerThreadParams;
-import com.facebook.messenger.ShareToMessengerParams;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -470,73 +467,6 @@ public class FacebookPlugin implements IPlugin {
 
       log("saved bitmap in sharable location", uri);
       return uri;
-  }
-
-  public void shareImage(String jsonData, final Integer requestId) {
-      log("share image requested");
-
-      String image = "";
-      Bitmap bitmap;
-      Uri uri = null;
-      boolean failed = true;
-
-      try {
-          JSONObject jsonObject = new JSONObject(jsonData);
-
-          if (jsonObject.has("image")) {
-              image = jsonObject.getString("image");
-          }
-
-          if (jsonObject.has("filename")) {
-              _tempFilename = jsonObject.getString("filename");
-          }
-
-          // write image to shareable path
-          if (image != "") {
-              _sharedImagePath = null;
-              uri = null;
-              log("creating bitmap from base 64 content");
-              bitmap = bitmapFromBase64(image);
-              if (bitmap != null) {
-                  uri = saveImageLocally(bitmap);
-                  log("saving image in shared location:", uri);
-              } else {
-                  log("failed to create bitmap");
-              }
-
-              if (uri != null) {
-                  log("sending image", uri);
-                  String mimeType = "image/png";
-
-                  // look for messenger
-                  if (MessengerUtils.hasMessengerInstalled(_context)) {
-                      ShareToMessengerParams shareToMessengerParams =
-                          ShareToMessengerParams.newBuilder(uri, mimeType)
-                              .build();
-
-                      MessengerUtils.shareToMessenger(
-                              _activity,
-                              REQUEST_CODE_SHARE_TO_MESSENGER,
-                              shareToMessengerParams
-                          );
-
-                      failed = false;
-                  } else {
-                      // fall back to regular image share
-                      ShareLinkContent linkContent = new ShareLinkContent.Builder()
-                              .setImageUrl(uri)
-                              .build();
-                      shareDialog.show(linkContent);
-                  }
-              }
-          }
-
-      } catch (Exception e) {
-          log("Exception while sharing image", e);
-          e.printStackTrace();
-      }
-
-      sendResponse(new ShareCompletedEvent(!failed), null, requestId);
   }
 
   public class ShareCompletedEvent extends com.tealeaf.event.Event {

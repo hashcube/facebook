@@ -3,7 +3,6 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 #import <FBSDKShareKit/FBSDKShareKit.h>
-#import <FBSDKMessengerShareKit/FBSDKMessengerShareKit.h>
 
 @implementation FacebookPlugin
 
@@ -342,25 +341,6 @@
   NSDictionary * loginStatus = [self authResponse];
   NSDictionary * authResponse = [loginStatus objectForKey:@"authResponse"];
   [[PluginManager get] dispatchJSResponse:authResponse withError:nil andRequestId:requestId];
-}
-
-- (void) shareImage:(NSDictionary *)opts withRequestId:(NSNumber *)requestId {
-    UIImage* image = nil;
-
-    if (opts[@"image"]) {
-        NSData* imageData = [[NSData alloc] initWithBase64EncodedString:opts[@"image"] options:0];
-        image = [[UIImage alloc] initWithData:imageData];
-
-        if ([FBSDKMessengerSharer messengerPlatformCapabilities] & FBSDKMessengerPlatformCapabilityImage) {
-            [FBSDKMessengerSharer shareImage:image withOptions:nil];
-        }
-    }
-
-  [[PluginManager get]
-             dispatchJSResponse: @{@"successs": @true}
-             withError:nil
-             andRequestId:requestId
-             ];
 }
 
 - (void) logEvent:(NSDictionary *)opts {
