@@ -19,8 +19,7 @@
 #import <Foundation/Foundation.h>
 
 #import <FBSDKCoreKit/FBSDKCopying.h>
-
-NS_ASSUME_NONNULL_BEGIN
+#import <FBSDKCoreKit/FBSDKMacros.h>
 
 /**
  NS_ENUM(NSUInteger, FBSDKAppGroupPrivacy)
@@ -32,18 +31,16 @@ typedef NS_ENUM(NSUInteger, FBSDKAppGroupPrivacy)
   FBSDKAppGroupPrivacyOpen = 0,
   /** Anyone can see the group and who's in it, but only members can see posts. */
   FBSDKAppGroupPrivacyClosed,
-} NS_SWIFT_NAME(AppGroupPrivacy);
+};
 
 /**
   Converts an FBSDKAppGroupPrivacy to an NSString.
  */
-FOUNDATION_EXPORT NSString *NSStringFromFBSDKAppGroupPrivacy(FBSDKAppGroupPrivacy privacy)
-NS_REFINED_FOR_SWIFT;
+FBSDK_EXTERN NSString *NSStringFromFBSDKAppGroupPrivacy(FBSDKAppGroupPrivacy privacy);
 
 /**
   A model for creating an app group.
  */
-NS_SWIFT_NAME(AppGroupContent)
 @interface FBSDKAppGroupContent : NSObject <FBSDKCopying, NSSecureCoding>
 
 /**
@@ -63,11 +60,9 @@ NS_SWIFT_NAME(AppGroupContent)
 
 /**
   Compares the receiver to another app group content.
- @param content The other content
- @return YES if the receiver's values are equal to the other content's values; otherwise NO
+ - Parameter content: The other content
+ - Returns: YES if the receiver's values are equal to the other content's values; otherwise NO
  */
 - (BOOL)isEqualToAppGroupContent:(FBSDKAppGroupContent *)content;
 
 @end
-
-NS_ASSUME_NONNULL_END

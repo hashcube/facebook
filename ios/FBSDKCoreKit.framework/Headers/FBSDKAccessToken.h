@@ -20,10 +20,7 @@
 
 #import <FBSDKCoreKit/FBSDKCopying.h>
 #import <FBSDKCoreKit/FBSDKGraphRequestConnection.h>
-
-NS_ASSUME_NONNULL_BEGIN
-
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
+#import <FBSDKCoreKit/FBSDKMacros.h>
 
 /**
   Notification indicating that the `currentAccessToken` has changed.
@@ -32,21 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
  `FBSDKAccessTokenChangeOldKey` and
  `FBSDKAccessTokenChangeNewKey`.
  */
-FOUNDATION_EXPORT NSNotificationName const FBSDKAccessTokenDidChangeNotification
-NS_SWIFT_NAME(AccessTokenDidChange);
-
-#else
-
-/**
- Notification indicating that the `currentAccessToken` has changed.
-
- the userInfo dictionary of the notification will contain keys
- `FBSDKAccessTokenChangeOldKey` and
- `FBSDKAccessTokenChangeNewKey`.
- */
-FOUNDATION_EXPORT NSString *const FBSDKAccessTokenDidChangeNotification
-NS_SWIFT_NAME(AccessTokenDidChangeNotification);
-#endif
+FBSDK_EXTERN NSString *const FBSDKAccessTokenDidChangeNotification;
 
 /**
   A key in the notification's userInfo that will be set
@@ -61,172 +44,147 @@ NS_SWIFT_NAME(AccessTokenDidChangeNotification);
   of an access token, this key will also exist since the access token
   is moving from a null state (no user) to a non-null state (user).
  */
-FOUNDATION_EXPORT NSString *const FBSDKAccessTokenDidChangeUserIDKey
-NS_SWIFT_NAME(AccessTokenDidChangeUserIDKey);
+FBSDK_EXTERN NSString *const FBSDKAccessTokenDidChangeUserID;
 
 /*
   key in notification's userInfo object for getting the old token.
 
  If there was no old token, the key will not be present.
  */
-FOUNDATION_EXPORT NSString *const FBSDKAccessTokenChangeOldKey
-NS_SWIFT_NAME(AccessTokenChangeOldKey);
+FBSDK_EXTERN NSString *const FBSDKAccessTokenChangeOldKey;
 
 /*
   key in notification's userInfo object for getting the new token.
 
  If there is no new token, the key will not be present.
  */
-FOUNDATION_EXPORT NSString *const FBSDKAccessTokenChangeNewKey
-NS_SWIFT_NAME(AccessTokenChangeNewKey);
+FBSDK_EXTERN NSString *const FBSDKAccessTokenChangeNewKey;
 
 /*
  A key in the notification's userInfo that will be set
  if and only if the token has expired.
  */
-FOUNDATION_EXPORT NSString *const FBSDKAccessTokenDidExpireKey
-NS_SWIFT_NAME(AccessTokenDidExpireKey);
+FBSDK_EXTERN NSString *const FBSDKAccessTokenDidExpire;
 
 
 /**
   Represents an immutable access token for using Facebook services.
  */
-NS_SWIFT_NAME(AccessToken)
 @interface FBSDKAccessToken : NSObject<FBSDKCopying, NSSecureCoding>
-
-
-/**
-  The "global" access token that represents the currently logged in user.
-
- The `currentAccessToken` is a convenient representation of the token of the
- current user and is used by other SDK components (like `FBSDKLoginManager`).
- */
-@property (class, nonatomic, copy, nullable) FBSDKAccessToken *currentAccessToken;
-
-/**
- Returns YES if currentAccessToken is not nil AND currentAccessToken is not expired
-
- */
-@property (class, nonatomic, assign, readonly, getter=isCurrentAccessTokenActive) BOOL currentAccessTokenIsActive;
 
 /**
   Returns the app ID.
  */
-@property (nonatomic, copy, readonly) NSString *appID;
-
-/**
- Returns the expiration date for data access
- */
-@property (nonatomic, copy, readonly) NSDate *dataAccessExpirationDate;
+@property (readonly, copy, nonatomic) NSString *appID;
 
 /**
   Returns the known declined permissions.
  */
-@property (nonatomic, copy, readonly) NSSet<NSString *> *declinedPermissions
-NS_REFINED_FOR_SWIFT;
-
-/**
- Returns the known declined permissions.
- */
-@property (nonatomic, copy, readonly) NSSet<NSString *> *expiredPermissions
-NS_REFINED_FOR_SWIFT;
+@property (readonly, copy, nonatomic) NSSet *declinedPermissions;
 
 /**
   Returns the expiration date.
  */
-@property (nonatomic, copy, readonly) NSDate *expirationDate;
+@property (readonly, copy, nonatomic) NSDate *expirationDate;
 
 /**
   Returns the known granted permissions.
  */
-@property (nonatomic, copy, readonly) NSSet<NSString *> *permissions
-NS_REFINED_FOR_SWIFT;
+@property (readonly, copy, nonatomic) NSSet *permissions;
 
 /**
   Returns the date the token was last refreshed.
 */
-@property (nonatomic, copy, readonly) NSDate *refreshDate;
+@property (readonly, copy, nonatomic) NSDate *refreshDate;
 
 /**
   Returns the opaque token string.
  */
-@property (nonatomic, copy, readonly) NSString *tokenString;
+@property (readonly, copy, nonatomic) NSString *tokenString;
 
 /**
   Returns the user ID.
  */
-@property (nonatomic, copy, readonly) NSString *userID;
+@property (readonly, copy, nonatomic) NSString *userID;
 
 /**
  Returns whether the access token is expired by checking its expirationDate property
  */
-@property (readonly, assign, nonatomic, getter=isExpired) BOOL expired;
-
-/**
- Returns whether user data access is still active for the given access token
- */
-@property (readonly, assign, nonatomic, getter=isDataAccessExpired) BOOL dataAccessExpired;
+@property (readonly, assign, nonatomic, getter = isExpired) BOOL expired;
 
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)new NS_UNAVAILABLE;
 
 /**
- Initializes a new instance.
- @param tokenString the opaque token string.
- @param permissions the granted permissions. Note this is converted to NSSet and is only
+  Initializes a new instance.
+ - Parameter tokenString: the opaque token string.
+ - Parameter permissions: the granted permissions. Note this is converted to NSSet and is only
  an NSArray for the convenience of literal syntax.
- @param declinedPermissions the declined permissions. Note this is converted to NSSet and is only
+ - Parameter declinedPermissions: the declined permissions. Note this is converted to NSSet and is only
  an NSArray for the convenience of literal syntax.
- @param expiredPermissions the expired permissions. Note this is converted to NSSet and is only
- an NSArray for the convenience of literal syntax.
- @param appID the app ID.
- @param userID the user ID.
- @param expirationDate the optional expiration date (defaults to distantFuture).
- @param refreshDate the optional date the token was last refreshed (defaults to today).
- @param dataAccessExpirationDate the date which data access will expire for the given user
- (defaults to distantFuture).
+ - Parameter appID: the app ID.
+ - Parameter userID: the user ID.
+ - Parameter expirationDate: the optional expiration date (defaults to distantFuture).
+ - Parameter refreshDate: the optional date the token was last refreshed (defaults to today).
 
  This initializer should only be used for advanced apps that
  manage tokens explicitly. Typical login flows only need to use `FBSDKLoginManager`
  along with `+currentAccessToken`.
  */
 - (instancetype)initWithTokenString:(NSString *)tokenString
-                        permissions:(NSArray<NSString *> *)permissions
-                declinedPermissions:(NSArray<NSString *> *)declinedPermissions
-                 expiredPermissions:(NSArray<NSString *> *)expiredPermissions
+                        permissions:(NSArray *)permissions
+                declinedPermissions:(NSArray *)declinedPermissions
                               appID:(NSString *)appID
                              userID:(NSString *)userID
-                     expirationDate:(nullable NSDate *)expirationDate
-                        refreshDate:(nullable NSDate *)refreshDate
-           dataAccessExpirationDate:(nullable NSDate *)dataAccessExpirationDate
+                     expirationDate:(NSDate *)expirationDate
+                        refreshDate:(NSDate *)refreshDate
 NS_DESIGNATED_INITIALIZER;
 
 /**
   Convenience getter to determine if a permission has been granted
- @param permission  The permission to check.
+ - Parameter permission:  The permission to check.
  */
-- (BOOL)hasGranted:(NSString *)permission
-NS_SWIFT_NAME(hasGranted(permission:));
+- (BOOL)hasGranted:(NSString *)permission;
 
 /**
   Compares the receiver to another FBSDKAccessToken
- @param token The other token
- @return YES if the receiver's values are equal to the other token's values; otherwise NO
+ - Parameter token: The other token
+ - Returns: YES if the receiver's values are equal to the other token's values; otherwise NO
  */
 - (BOOL)isEqualToAccessToken:(FBSDKAccessToken *)token;
 
 /**
+  Returns the "global" access token that represents the currently logged in user.
+
+ The `currentAccessToken` is a convenient representation of the token of the
+ current user and is used by other SDK components (like `FBSDKLoginManager`).
+ */
++ (FBSDKAccessToken *)currentAccessToken;
+
+/**
+ Returns YES if currentAccessToken is not nil AND currentAccessToken is not expired
+
+ */
++ (BOOL)currentAccessTokenIsActive;
+
+/**
+  Sets the "global" access token that represents the currently logged in user.
+ - Parameter token: The access token to set.
+
+ This will broadcast a notification and save the token to the app keychain.
+ */
++ (void)setCurrentAccessToken:(FBSDKAccessToken *)token;
+
+/**
   Refresh the current access token's permission state and extend the token's expiration date,
   if possible.
- @param completionHandler an optional callback handler that can surface any errors related to permission refreshing.
+ - Parameter completionHandler: an optional callback handler that can surface any errors related to permission refreshing.
 
  On a successful refresh, the currentAccessToken will be updated so you typically only need to
   observe the `FBSDKAccessTokenDidChangeNotification` notification.
 
  If a token is already expired, it cannot be refreshed.
  */
-+ (void)refreshCurrentAccessToken:(nullable FBSDKGraphRequestBlock)completionHandler;
++ (void)refreshCurrentAccessToken:(FBSDKGraphRequestHandler)completionHandler;
 
 @end
-
-NS_ASSUME_NONNULL_END

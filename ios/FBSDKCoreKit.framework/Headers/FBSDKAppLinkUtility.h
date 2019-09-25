@@ -18,29 +18,29 @@
 
 #import <Foundation/Foundation.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
 /**
   Describes the callback for fetchDeferredAppLink.
- @param url the url representing the deferred App Link
- @param error the error during the request, if any
+ - Parameter url: the url representing the deferred App Link
+ - Parameter error: the error during the request, if any
 
 
  The url may also have a fb_click_time_utc query parameter that
  represents when the click occurred that caused the deferred App Link to be created.
  */
-typedef void (^FBSDKURLBlock)(NSURL *_Nullable url, NSError *_Nullable error)
-NS_SWIFT_NAME(URLBlock);
+typedef void (^FBSDKDeferredAppLinkHandler)(NSURL *url, NSError *error);
+
+
+/**
+  Describes the callback for fetchOrganicDeferredAppLink.
+ - Parameter url: the url representing the deferred App Link
+ */
+typedef void (^FBSDKDeferredAppInviteHandler)(NSURL *url);
 
 
 /**
   Class containing App Links related utility methods.
  */
-NS_SWIFT_NAME(AppLinkUtility)
 @interface FBSDKAppLinkUtility : NSObject
-
-- (instancetype)init NS_UNAVAILABLE;
-+ (instancetype)new NS_UNAVAILABLE;
 
 /**
   Call this method from the main thread to fetch deferred applink data if you use Mobile App
@@ -49,7 +49,7 @@ NS_SWIFT_NAME(AppLinkUtility)
  data (this will only return a valid URL once, and future calls will result in a nil URL
  value in the callback).
 
- @param handler the handler to be invoked if there is deferred App Link data
+ - Parameter handler: the handler to be invoked if there is deferred App Link data
 
 
  The handler may contain an NSError instance to capture any errors. In the
@@ -59,22 +59,31 @@ NS_SWIFT_NAME(AppLinkUtility)
  been processed (e.g., you should call this method from your application delegate's
  applicationDidBecomeActive:).
  */
-+ (void)fetchDeferredAppLink:(nullable FBSDKURLBlock)handler;
++ (void)fetchDeferredAppLink:(FBSDKDeferredAppLinkHandler)handler;
+
+/**
+
+- Warning:This method is no longer available and will always return NO.
+ */
++ (BOOL)fetchDeferredAppInvite:(FBSDKDeferredAppInviteHandler)handler
+__attribute__((deprecated("This method is no longer available.")));;
 
 /*
-  Call this method to fetch promotion code from the url, if it's present.
+  Call this method to fetch promotion code from the url, if it's present. This function
+ requires Bolts framework.
 
- @param url App Link url that was passed to the app.
+ Note: This throws an exception if Bolts.framework is not linked. Add '[BFURL class]' in intialize method
+ of your AppDelegate.
 
- @return Promotion code string.
+ - Parameter url: App Link url that was passed to the app.
+
+ - Returns: Promotion code string.
 
 
  Call this method to fetch App Invite Promotion Code from applink if present.
  This can be used to fetch the promotion code that was associated with the invite when it
  was created. This method should be called with the url from the openURL method.
 */
-+ (nullable NSString *)appInvitePromotionCodeFromURL:(NSURL *)url;
++ (NSString*)appInvitePromotionCodeFromURL:(NSURL*)url;
 
 @end
-
-NS_ASSUME_NONNULL_END

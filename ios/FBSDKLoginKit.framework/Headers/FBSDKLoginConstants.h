@@ -18,111 +18,82 @@
 
 #import <Foundation/Foundation.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
+#import <FBSDKCoreKit/FBSDKMacros.h>
 
 /**
- The error domain for all errors from FBSDKLoginKit
+  The error domain for all errors from FBSDKLoginKit
 
  Error codes from the SDK in the range 300-399 are reserved for this domain.
  */
-FOUNDATION_EXPORT NSErrorDomain const FBSDKLoginErrorDomain
-NS_SWIFT_NAME(LoginErrorDomain);
-
-#else
+FBSDK_EXTERN NSString *const FBSDKLoginErrorDomain;
 
 /**
- The error domain for all errors from FBSDKLoginKit
-
- Error codes from the SDK in the range 300-399 are reserved for this domain.
- */
-FOUNDATION_EXPORT NSString *const FBSDKLoginErrorDomain
-NS_SWIFT_NAME(LoginErrorDomain);
-
-#endif
-
-#ifndef NS_ERROR_ENUM
-#define NS_ERROR_ENUM(_domain, _name) \
-enum _name: NSInteger _name; \
-enum __attribute__((ns_error_domain(_domain))) _name: NSInteger
-#endif
-
-/**
- FBSDKLoginError
+ NS_ENUM(NSInteger, FBSDKLoginErrorCode)
   Error codes for FBSDKLoginErrorDomain.
  */
-typedef NS_ERROR_ENUM(FBSDKLoginErrorDomain, FBSDKLoginError)
+typedef NS_ENUM(NSInteger, FBSDKLoginErrorCode)
 {
   /**
     Reserved.
    */
-  FBSDKLoginErrorReserved = 300,
-
+  FBSDKLoginReservedErrorCode = 300,
   /**
     The error code for unknown errors.
    */
-  FBSDKLoginErrorUnknown,
+  FBSDKLoginUnknownErrorCode,
 
   /**
     The user's password has changed and must log in again
   */
-  FBSDKLoginErrorPasswordChanged,
-
+  FBSDKLoginPasswordChangedErrorCode,
   /**
     The user must log in to their account on www.facebook.com to restore access
   */
-  FBSDKLoginErrorUserCheckpointed,
-
+  FBSDKLoginUserCheckpointedErrorCode,
   /**
     Indicates a failure to request new permissions because the user has changed.
    */
-  FBSDKLoginErrorUserMismatch,
-
+  FBSDKLoginUserMismatchErrorCode,
   /**
     The user must confirm their account with Facebook before logging in
   */
-  FBSDKLoginErrorUnconfirmedUser,
+  FBSDKLoginUnconfirmedUserErrorCode,
 
   /**
     The Accounts framework failed without returning an error, indicating the
    app's slider in the iOS Facebook Settings (device Settings -> Facebook -> App Name) has
    been disabled.
    */
-  FBSDKLoginErrorSystemAccountAppDisabled,
-
+  FBSDKLoginSystemAccountAppDisabledErrorCode,
   /**
     An error occurred related to Facebook system Account store
   */
-  FBSDKLoginErrorSystemAccountUnavailable,
-
+  FBSDKLoginSystemAccountUnavailableErrorCode,
   /**
     The login response was missing a valid challenge string.
   */
-  FBSDKLoginErrorBadChallengeString,
-} NS_SWIFT_NAME(LoginError);
+  FBSDKLoginBadChallengeString,
+};
 
 /**
- FBSDKDeviceLoginError
+ NS_ENUM(NSInteger, FBSDKDeviceLoginErrorCode)
  Error codes for FBSDKDeviceLoginErrorDomain.
  */
-typedef NS_ERROR_ENUM(FBSDKLoginErrorDomain, FBSDKDeviceLoginError) {
+typedef NS_ENUM(NSUInteger, FBSDKDeviceLoginErrorSubcode) {
   /**
    Your device is polling too frequently.
    */
-  FBSDKDeviceLoginErrorExcessivePolling = 1349172,
+  FBSDKDeviceLoginExcessivePollingErrorSubcode = 1349172,
   /**
    User has declined to authorize your application.
    */
-  FBSDKDeviceLoginErrorAuthorizationDeclined = 1349173,
+  FBSDKDeviceLoginAuthorizationDeclinedErrorSubcode = 1349173,
   /**
    User has not yet authorized your application. Continue polling.
    */
-  FBSDKDeviceLoginErrorAuthorizationPending = 1349174,
+  FBSDKDeviceLoginAuthorizationPendingErrorSubcode = 1349174,
   /**
    The code you entered has expired.
    */
-  FBSDKDeviceLoginErrorCodeExpired = 1349152
-} NS_SWIFT_NAME(DeviceLoginError);
-
-NS_ASSUME_NONNULL_END
+  FBSDKDeviceLoginCodeExpiredErrorSubcode = 1349152
+};

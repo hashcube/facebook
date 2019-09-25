@@ -40,11 +40,15 @@
 #import <FBSDKShareKit/FBSDKSharingContent.h>
 
 #if !TARGET_OS_TV
+#import <FBSDKShareKit/FBSDKAppGroupAddDialog.h>
 #import <FBSDKShareKit/FBSDKAppGroupContent.h>
+#import <FBSDKShareKit/FBSDKAppGroupJoinDialog.h>
 #import <FBSDKShareKit/FBSDKAppInviteContent.h>
+#import <FBSDKShareKit/FBSDKAppInviteDialog.h>
 #import <FBSDKShareKit/FBSDKGameRequestContent.h>
 #import <FBSDKShareKit/FBSDKGameRequestDialog.h>
-#import <FBSDKShareKit/FBSDKLiking.h>
+#import <FBSDKShareKit/FBSDKLikeButton.h>
+#import <FBSDKShareKit/FBSDKLikeControl.h>
 #import <FBSDKShareKit/FBSDKLikeObjectType.h>
 #import <FBSDKShareKit/FBSDKMessageDialog.h>
 #import <FBSDKShareKit/FBSDKShareButton.h>

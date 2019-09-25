@@ -18,23 +18,17 @@
 
 #import <Foundation/Foundation.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
 @class FBSDKAccessToken;
 
 /**
   Describes the result of a login attempt.
  */
-NS_SWIFT_NAME(LoginManagerLoginResult)
 @interface FBSDKLoginManagerLoginResult : NSObject
-
-- (instancetype)init NS_UNAVAILABLE;
-+ (instancetype)new NS_UNAVAILABLE;
 
 /**
   the access token.
  */
-@property (copy, nonatomic, nullable) FBSDKAccessToken *token;
+@property (copy, nonatomic) FBSDKAccessToken *token;
 
 /**
   whether the login was cancelled by the user.
@@ -46,27 +40,25 @@ NS_SWIFT_NAME(LoginManagerLoginResult)
 
  inspect the token's permissions set for a complete list.
  */
-@property (copy, nonatomic) NSSet<NSString *> *grantedPermissions;
+@property (copy, nonatomic) NSSet *grantedPermissions;
 
 /**
   the set of permissions declined by the user in the associated request.
 
  inspect the token's permissions set for a complete list.
  */
-@property (copy, nonatomic) NSSet<NSString *> *declinedPermissions;
+@property (copy, nonatomic) NSSet *declinedPermissions;
 
 /**
   Initializes a new instance.
- @param token the access token
- @param isCancelled whether the login was cancelled by the user
- @param grantedPermissions the set of granted permissions
- @param declinedPermissions the set of declined permissions
+ - Parameter token: the access token
+ - Parameter isCancelled: whether the login was cancelled by the user
+ - Parameter grantedPermissions: the set of granted permissions
+ - Parameter declinedPermissions: the set of declined permissions
  */
-- (instancetype)initWithToken:(nullable FBSDKAccessToken *)token
+- (instancetype)initWithToken:(FBSDKAccessToken *)token
                   isCancelled:(BOOL)isCancelled
-           grantedPermissions:(NSSet<NSString *> *)grantedPermissions
-          declinedPermissions:(NSSet<NSString *> *)declinedPermissions
+           grantedPermissions:(NSSet *)grantedPermissions
+          declinedPermissions:(NSSet *)declinedPermissions
 NS_DESIGNATED_INITIALIZER;
 @end
-
-NS_ASSUME_NONNULL_END

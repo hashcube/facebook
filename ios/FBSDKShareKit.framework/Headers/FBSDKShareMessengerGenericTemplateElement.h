@@ -21,14 +21,11 @@
 #import <FBSDKCoreKit/FBSDKCopying.h>
 #import <FBSDKShareKit/FBSDKShareMessengerActionButton.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
 /**
  A model for sharing a generic template element to Messenger. This allows specifying title, subtitle,
  image, default action, and any other buttons. Title is required. See
  https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic for more details.
  */
-NS_SWIFT_NAME(ShareMessengerGenericTemplateElement)
 @interface FBSDKShareMessengerGenericTemplateElement : NSObject <FBSDKCopying, NSSecureCoding>
 
 /**
@@ -39,23 +36,21 @@ NS_SWIFT_NAME(ShareMessengerGenericTemplateElement)
 /**
  The rendered subtitle for the shared generic template element. Optional.
  */
-@property (nonatomic, copy, nullable) NSString *subtitle;
+@property (nonatomic, copy) NSString *subtitle;
 
 /**
  The image url that will be downloaded and rendered at the top of the generic template. Optional.
  */
-@property (nonatomic, copy, nullable) NSURL *imageURL;
+@property (nonatomic, copy) NSURL *imageURL;
 
 /**
  The default action executed when this shared generic tempate is tapped. Title for this button is ignored. Optional.
  */
-@property (nonatomic, copy, nullable) id<FBSDKShareMessengerActionButton> defaultAction;
+@property (nonatomic, copy) id<FBSDKShareMessengerActionButton> defaultAction;
 
 /**
  This specifies what action button to show below the generic template. Optional.
  */
-@property (nonatomic, copy, nullable) id<FBSDKShareMessengerActionButton> button;
+@property (nonatomic, copy) id<FBSDKShareMessengerActionButton> button;
 
 @end
-
-NS_ASSUME_NONNULL_END

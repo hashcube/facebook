@@ -18,7 +18,7 @@
 
 #import <Foundation/Foundation.h>
 
-NS_ASSUME_NONNULL_BEGIN
+#import <FBSDKCoreKit/FBSDKMacros.h>
 
 /**
  NS_ENUM (NSUInteger, FBSDKLikeObjectType)
@@ -32,12 +32,9 @@ typedef NS_ENUM(NSUInteger, FBSDKLikeObjectType)
   FBSDKLikeObjectTypeOpenGraph,
   /** The objectID refers to an Page object. */
   FBSDKLikeObjectTypePage,
-} NS_SWIFT_NAME(LikeObjectType);
+};
 
 /**
   Converts an FBLikeControlObjectType to an NSString.
  */
-FOUNDATION_EXPORT NSString *NSStringFromFBSDKLikeObjectType(FBSDKLikeObjectType objectType)
-NS_REFINED_FOR_SWIFT;
-
-NS_ASSUME_NONNULL_END
+FBSDK_EXTERN NSString *NSStringFromFBSDKLikeObjectType(FBSDKLikeObjectType objectType);
