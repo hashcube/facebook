@@ -76,17 +76,17 @@
             permissionsErrorMessage = @"Your app can't ask for both read and write permissions.";
         } else if (publishPermissionFound) {
             // Only publish permissions
-            [login logInWithPublishPermissions:permissions handler:handleLogin];
+            [login logInWithPermissions:permissions fromViewController:nil handler:handleLogin];
         } else {
             // Only read permissions
-            [login logInWithReadPermissions:permissions handler:handleLogin];
+            [login logInWithPermissions:permissions fromViewController:nil handler:handleLogin];
             self.loginRequestId = requestId;
         }
     } else {
         // Initial log in, can only ask for read type permissions
         NSLOG(@"{facebook} requesting initial login");
         if ([self areAllPermissionsReadPermissions:permissions]) {
-            [login logInWithReadPermissions:permissions handler:handleLogin];
+            [login logInWithPermissions:permissions fromViewController:nil handler:handleLogin];
         } else {
           permissionsAllowed = NO;
           permissionsErrorMessage = @"You can only ask for read permissions initially";
